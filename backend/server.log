@@ -1,0 +1,430 @@
+[dotenv@17.2.1] injecting env (11) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+🚀 服务器已启动: http://localhost:3001
+📝 环境: development
+🔗 前端地址: http://localhost:5173
+📊 健康检查: http://localhost:3001/health
+📨 POST /api/ai/quick-analyze - 2025-08-14T01:57:01.180Z
+[AI Controller] 开始快速分析: {
+  requirement: '用户在WPS文档中使用AI写作助手功能...',
+  productType: 'desktop',
+  implementType: 'ai'
+}
+[AI Service] 开始流程图分析: {
+  requirement: '用户在WPS文档中使用AI写作助手功能...',
+  productType: 'desktop',
+  implementType: 'ai'
+}
+[Prompt Service] Prompt生成: {
+  requirement: '用户在WPS文档中使用AI写作助手功能...',
+  productType: 'desktop',
+  implementType: 'ai',
+  promptLength: 167,
+  validationScore: 85,
+  timestamp: '2025-08-14T01:57:01.188Z'
+}
+[Prompt Service] Prompt验证错误: [ '缺少关键维度: 商业化' ]
+[Prompt Service] Prompt验证警告: [ 'Prompt可能过于简单，建议增加更多细节' ]
+[AI Service] Prompt验证失败，使用简化版本
+[AI Service] 发起AI调用: {"model":"anthropic/claude-3.5-sonnet","messages":[{"role":"user","content":"请基于以下需求生成Mermaid流程图：\n\n需求：用户在WPS文档中使用AI写作助手功能\n产品形态：desktop\n实现方式：ai\n\n请生成包含以下关键节点的流程图：\n1. 功能触发\n2. 权限验证\n3. 核心业务逻辑\n4. ...
+[AI Service] AI调用失败: { error: { message: 'No auth credentials found', code: 401 } }
+[AI Service] 生成失败: AxiosError: Request failed with status code 401
+    at settle (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/node_modules/axios/lib/core/settle.js:19:12)
+    at IncomingMessage.handleStreamEnd (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/node_modules/axios/lib/adapters/http.js:599:11)
+    at IncomingMessage.emit (node:events:519:35)
+    at endReadableNT (node:internal/streams/readable:1696:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+    at Axios.request (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/node_modules/axios/lib/core/Axios.js:45:41)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async AIService.generateText (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/services/aiService.js:74:24)
+    at async AIService.analyzeFlowchart (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/services/aiService.js:133:16)
+    at async AIService.quickAnalyze (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/services/aiService.js:162:12)
+    at async quickAnalyze (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/controllers/aiController.js:248:22) {
+  code: 'ERR_BAD_REQUEST',
+  config: {
+    transitional: {
+      silentJSONParsing: true,
+      forcedJSONParsing: true,
+      clarifyTimeoutError: false
+    },
+    adapter: [ 'xhr', 'http', 'fetch' ],
+    transformRequest: [ [Function: transformRequest] ],
+    transformResponse: [ [Function: transformResponse] ],
+    timeout: 30000,
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN',
+    maxContentLength: -1,
+    maxBodyLength: -1,
+    env: { FormData: [Function [FormData]], Blob: [class Blob] },
+    validateStatus: [Function: validateStatus],
+    headers: Object [AxiosHeaders] {
+      Accept: 'application/json, text/plain, */*',
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer your_openrouter_api_key_here',
+      'HTTP-Referer': 'http://localhost:3001',
+      'X-Title': 'AI-Flowchart-Generator',
+      'User-Agent': 'axios/1.11.0',
+      'Content-Length': '520',
+      'Accept-Encoding': 'gzip, compress, deflate, br'
+    },
+    baseURL: 'https://openrouter.ai/api/v1',
+    method: 'post',
+    url: '/chat/completions',
+    data: '{"model":"anthropic/claude-3.5-sonnet","messages":[{"role":"user","content":"请基于以下需求生成Mermaid流程图：\\n\\n需求：用户在WPS文档中使用AI写作助手功能\\n产品形态：desktop\\n实现方式：ai\\n\\n请生成包含以下关键节点的流程图：\\n1. 功能触发\\n2. 权限验证\\n3. 核心业务逻辑\\n4. 结果反馈\\n5. 异常处理\\n\\n输出格式：Mermaid flowchart TD语法，确保语法正确且逻辑清晰。"}],"temperature":0.3,"max_tokens":3000,"top_p":0.9,"stream":false}',
+    allowAbsoluteUrls: true
+  },
+  request: <ref *1> ClientRequest {
+    _events: [Object: null prototype] {
+      abort: [Function (anonymous)],
+      aborted: [Function (anonymous)],
+      connect: [Function (anonymous)],
+      error: [Function (anonymous)],
+      socket: [Function (anonymous)],
+      timeout: [Function (anonymous)],
+      finish: [Function: requestOnFinish]
+    },
+    _eventsCount: 7,
+    _maxListeners: undefined,
+    outputData: [],
+    outputSize: 0,
+    writable: true,
+    destroyed: true,
+    _last: false,
+    chunkedEncoding: false,
+    shouldKeepAlive: true,
+    maxRequestsOnConnectionReached: false,
+    _defaultKeepAlive: true,
+    useChunkedEncodingByDefault: true,
+    sendDate: false,
+    _removedConnection: false,
+    _removedContLen: false,
+    _removedTE: false,
+    strictContentLength: false,
+    _contentLength: 520,
+    _hasBody: true,
+    _trailer: '',
+    finished: true,
+    _headerSent: true,
+    _closed: true,
+    _header: 'POST /api/v1/chat/completions HTTP/1.1\r\n' +
+      'Accept: application/json, text/plain, */*\r\n' +
+      'Content-Type: application/json\r\n' +
+      'Authorization: Bearer your_openrouter_api_key_here\r\n' +
+      'HTTP-Referer: http://localhost:3001\r\n' +
+      'X-Title: AI-Flowchart-Generator\r\n' +
+      'User-Agent: axios/1.11.0\r\n' +
+      'Content-Length: 520\r\n' +
+      'Accept-Encoding: gzip, compress, deflate, br\r\n' +
+      'Host: openrouter.ai\r\n' +
+      'Connection: keep-alive\r\n' +
+      '\r\n',
+    _keepAliveTimeout: 0,
+    _onPendingData: [Function: nop],
+    agent: Agent {
+      _events: [Object: null prototype],
+      _eventsCount: 2,
+      _maxListeners: undefined,
+      defaultPort: 443,
+      protocol: 'https:',
+      options: [Object: null prototype],
+      requests: [Object: null prototype] {},
+      sockets: [Object: null prototype] {},
+      freeSockets: [Object: null prototype],
+      keepAliveMsecs: 1000,
+      keepAlive: true,
+      maxSockets: Infinity,
+      maxFreeSockets: 256,
+      scheduling: 'lifo',
+      maxTotalSockets: Infinity,
+      totalSocketCount: 1,
+      maxCachedSessions: 100,
+      _sessionCache: [Object],
+      [Symbol(shapeMode)]: false,
+      [Symbol(kCapture)]: false
+    },
+    socketPath: undefined,
+    method: 'POST',
+    maxHeaderSize: undefined,
+    insecureHTTPParser: undefined,
+    joinDuplicateHeaders: undefined,
+    path: '/api/v1/chat/completions',
+    _ended: true,
+    res: IncomingMessage {
+      _events: [Object],
+      _readableState: [ReadableState],
+      _maxListeners: undefined,
+      socket: null,
+      httpVersionMajor: 1,
+      httpVersionMinor: 1,
+      httpVersion: '1.1',
+      complete: true,
+      rawHeaders: [Array],
+      rawTrailers: [],
+      joinDuplicateHeaders: undefined,
+      aborted: false,
+      upgrade: false,
+      url: '',
+      method: null,
+      statusCode: 401,
+      statusMessage: 'Unauthorized',
+      client: [TLSSocket],
+      _consuming: true,
+      _dumped: false,
+      req: [Circular *1],
+      _eventsCount: 4,
+      responseUrl: 'https://openrouter.ai/api/v1/chat/completions',
+      redirects: [],
+      [Symbol(shapeMode)]: true,
+      [Symbol(kCapture)]: false,
+      [Symbol(kHeaders)]: [Object],
+      [Symbol(kHeadersCount)]: 22,
+      [Symbol(kTrailers)]: null,
+      [Symbol(kTrailersCount)]: 0
+    },
+    aborted: false,
+    timeoutCb: null,
+    upgradeOrConnect: false,
+    parser: null,
+    maxHeadersCount: null,
+    reusedSocket: false,
+    host: 'openrouter.ai',
+    protocol: 'https:',
+    _redirectable: Writable {
+      _events: [Object],
+      _writableState: [WritableState],
+      _maxListeners: undefined,
+      _options: [Object],
+      _ended: true,
+      _ending: true,
+      _redirectCount: 0,
+      _redirects: [],
+      _requestBodyLength: 520,
+      _requestBodyBuffers: [],
+      _eventsCount: 3,
+      _onNativeResponse: [Function (anonymous)],
+      _currentRequest: [Circular *1],
+      _currentUrl: 'https://openrouter.ai/api/v1/chat/completions',
+      _timeout: null,
+      [Symbol(shapeMode)]: true,
+      [Symbol(kCapture)]: false
+    },
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false,
+    [Symbol(kBytesWritten)]: 0,
+    [Symbol(kNeedDrain)]: false,
+    [Symbol(corked)]: 0,
+    [Symbol(kChunkedBuffer)]: [],
+    [Symbol(kChunkedLength)]: 0,
+    [Symbol(kSocket)]: TLSSocket {
+      _tlsOptions: [Object],
+      _secureEstablished: true,
+      _securePending: false,
+      _newSessionPending: false,
+      _controlReleased: true,
+      secureConnecting: false,
+      _SNICallback: null,
+      servername: 'openrouter.ai',
+      alpnProtocol: false,
+      authorized: true,
+      authorizationError: null,
+      encrypted: true,
+      _events: [Object: null prototype],
+      _eventsCount: 9,
+      connecting: false,
+      _hadError: false,
+      _parent: null,
+      _host: 'openrouter.ai',
+      _closeAfterHandlingError: false,
+      _readableState: [ReadableState],
+      _writableState: [WritableState],
+      allowHalfOpen: false,
+      _maxListeners: undefined,
+      _sockname: null,
+      _pendingData: null,
+      _pendingEncoding: '',
+      server: undefined,
+      _server: null,
+      ssl: [TLSWrap],
+      _requestCert: true,
+      _rejectUnauthorized: true,
+      timeout: 5000,
+      parser: null,
+      _httpMessage: null,
+      autoSelectFamilyAttemptedAddresses: [Array],
+      [Symbol(alpncallback)]: null,
+      [Symbol(res)]: [TLSWrap],
+      [Symbol(verified)]: true,
+      [Symbol(pendingSession)]: null,
+      [Symbol(async_id_symbol)]: -1,
+      [Symbol(kHandle)]: [TLSWrap],
+      [Symbol(lastWriteQueueSize)]: 0,
+      [Symbol(timeout)]: Timeout {
+        _idleTimeout: 5000,
+        _idlePrev: [TimersList],
+        _idleNext: [TimersList],
+        _idleStart: 10004,
+        _onTimeout: [Function: bound ],
+        _timerArgs: undefined,
+        _repeat: null,
+        _destroyed: false,
+        [Symbol(refed)]: false,
+        [Symbol(kHasPrimitive)]: false,
+        [Symbol(asyncId)]: 807,
+        [Symbol(triggerId)]: 805,
+        [Symbol(kAsyncContextFrame)]: undefined
+      },
+      [Symbol(kBuffer)]: null,
+      [Symbol(kBufferCb)]: null,
+      [Symbol(kBufferGen)]: null,
+      [Symbol(shapeMode)]: true,
+      [Symbol(kCapture)]: false,
+      [Symbol(kSetNoDelay)]: false,
+      [Symbol(kSetKeepAlive)]: true,
+      [Symbol(kSetKeepAliveInitialDelay)]: 1,
+      [Symbol(kBytesRead)]: 0,
+      [Symbol(kBytesWritten)]: 0,
+      [Symbol(connect-options)]: [Object]
+    },
+    [Symbol(kOutHeaders)]: [Object: null prototype] {
+      accept: [Array],
+      'content-type': [Array],
+      authorization: [Array],
+      'http-referer': [Array],
+      'x-title': [Array],
+      'user-agent': [Array],
+      'content-length': [Array],
+      'accept-encoding': [Array],
+      host: [Array]
+    },
+    [Symbol(errored)]: null,
+    [Symbol(kHighWaterMark)]: 65536,
+    [Symbol(kRejectNonStandardBodyWrites)]: false,
+    [Symbol(kUniqueHeaders)]: null
+  },
+  response: {
+    status: 401,
+    statusText: 'Unauthorized',
+    headers: Object [AxiosHeaders] {
+      date: 'Thu, 14 Aug 2025 01:57:01 GMT',
+      'content-type': 'application/json',
+      'transfer-encoding': 'chunked',
+      connection: 'keep-alive',
+      'cf-ray': '96ecd6cc08c4e6c6-HKG',
+      'access-control-allow-origin': '*',
+      vary: 'Accept-Encoding',
+      'permissions-policy': 'payment=(self "https://checkout.stripe.com" "https://connect-js.stripe.com" "https://js.stripe.com" "https://*.js.stripe.com" "https://hooks.stripe.com")',
+      'referrer-policy': 'no-referrer, strict-origin-when-cross-origin',
+      'x-content-type-options': 'nosniff',
+      server: 'cloudflare'
+    },
+    config: {
+      transitional: [Object],
+      adapter: [Array],
+      transformRequest: [Array],
+      transformResponse: [Array],
+      timeout: 30000,
+      xsrfCookieName: 'XSRF-TOKEN',
+      xsrfHeaderName: 'X-XSRF-TOKEN',
+      maxContentLength: -1,
+      maxBodyLength: -1,
+      env: [Object],
+      validateStatus: [Function: validateStatus],
+      headers: [Object [AxiosHeaders]],
+      baseURL: 'https://openrouter.ai/api/v1',
+      method: 'post',
+      url: '/chat/completions',
+      data: '{"model":"anthropic/claude-3.5-sonnet","messages":[{"role":"user","content":"请基于以下需求生成Mermaid流程图：\\n\\n需求：用户在WPS文档中使用AI写作助手功能\\n产品形态：desktop\\n实现方式：ai\\n\\n请生成包含以下关键节点的流程图：\\n1. 功能触发\\n2. 权限验证\\n3. 核心业务逻辑\\n4. 结果反馈\\n5. 异常处理\\n\\n输出格式：Mermaid flowchart TD语法，确保语法正确且逻辑清晰。"}],"temperature":0.3,"max_tokens":3000,"top_p":0.9,"stream":false}',
+      allowAbsoluteUrls: true
+    },
+    request: <ref *1> ClientRequest {
+      _events: [Object: null prototype],
+      _eventsCount: 7,
+      _maxListeners: undefined,
+      outputData: [],
+      outputSize: 0,
+      writable: true,
+      destroyed: true,
+      _last: false,
+      chunkedEncoding: false,
+      shouldKeepAlive: true,
+      maxRequestsOnConnectionReached: false,
+      _defaultKeepAlive: true,
+      useChunkedEncodingByDefault: true,
+      sendDate: false,
+      _removedConnection: false,
+      _removedContLen: false,
+      _removedTE: false,
+      strictContentLength: false,
+      _contentLength: 520,
+      _hasBody: true,
+      _trailer: '',
+      finished: true,
+      _headerSent: true,
+      _closed: true,
+      _header: 'POST /api/v1/chat/completions HTTP/1.1\r\n' +
+        'Accept: application/json, text/plain, */*\r\n' +
+        'Content-Type: application/json\r\n' +
+        'Authorization: Bearer your_openrouter_api_key_here\r\n' +
+        'HTTP-Referer: http://localhost:3001\r\n' +
+        'X-Title: AI-Flowchart-Generator\r\n' +
+        'User-Agent: axios/1.11.0\r\n' +
+        'Content-Length: 520\r\n' +
+        'Accept-Encoding: gzip, compress, deflate, br\r\n' +
+        'Host: openrouter.ai\r\n' +
+        'Connection: keep-alive\r\n' +
+        '\r\n',
+      _keepAliveTimeout: 0,
+      _onPendingData: [Function: nop],
+      agent: [Agent],
+      socketPath: undefined,
+      method: 'POST',
+      maxHeaderSize: undefined,
+      insecureHTTPParser: undefined,
+      joinDuplicateHeaders: undefined,
+      path: '/api/v1/chat/completions',
+      _ended: true,
+      res: [IncomingMessage],
+      aborted: false,
+      timeoutCb: null,
+      upgradeOrConnect: false,
+      parser: null,
+      maxHeadersCount: null,
+      reusedSocket: false,
+      host: 'openrouter.ai',
+      protocol: 'https:',
+      _redirectable: [Writable],
+      [Symbol(shapeMode)]: false,
+      [Symbol(kCapture)]: false,
+      [Symbol(kBytesWritten)]: 0,
+      [Symbol(kNeedDrain)]: false,
+      [Symbol(corked)]: 0,
+      [Symbol(kChunkedBuffer)]: [],
+      [Symbol(kChunkedLength)]: 0,
+      [Symbol(kSocket)]: [TLSSocket],
+      [Symbol(kOutHeaders)]: [Object: null prototype],
+      [Symbol(errored)]: null,
+      [Symbol(kHighWaterMark)]: 65536,
+      [Symbol(kRejectNonStandardBodyWrites)]: false,
+      [Symbol(kUniqueHeaders)]: null
+    },
+    data: { error: [Object] }
+  },
+  status: 401
+}
+[AI Service] 流程图分析失败: Error: AI服务认证失败，请检查API密钥配置
+    at AIService.handleError (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/services/aiService.js:226:18)
+    at AIService.generateText (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/services/aiService.js:97:18)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async AIService.analyzeFlowchart (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/services/aiService.js:133:16)
+    at async AIService.quickAnalyze (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/services/aiService.js:162:12)
+    at async quickAnalyze (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/controllers/aiController.js:248:22)
+[AI Controller] 快速分析失败: Error: AI服务认证失败，请检查API密钥配置
+    at AIService.handleError (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/services/aiService.js:226:18)
+    at AIService.generateText (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/services/aiService.js:97:18)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async AIService.analyzeFlowchart (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/services/aiService.js:133:16)
+    at async AIService.quickAnalyze (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/services/aiService.js:162:12)
+    at async quickAnalyze (file:///Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/backend/src/controllers/aiController.js:248:22)
+::1 - - [14/Aug/2025:01:57:01 +0000] "POST /api/ai/quick-analyze HTTP/1.1" 500 159 "-" "curl/8.6.0"
+📤 POST /quick-analyze 🔴 500 - 374ms
+收到SIGTERM信号，正在关闭服务器...
