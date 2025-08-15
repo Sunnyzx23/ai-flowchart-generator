@@ -8,8 +8,7 @@ class DrawioService {
     this.baseUrl = 'https://app.diagrams.net/';
     this.defaultParams = {
       lightbox: '1',
-      edit: '_blank',
-      format: 'mermaid'
+      edit: '_blank'
     };
   }
 
@@ -52,25 +51,173 @@ class DrawioService {
       throw new Error('无效的Mermaid代码');
     }
 
-    // 合并参数
-    const params = {
-      ...this.defaultParams,
-      ...options
+    console.log('准备打开Draw.io，Mermaid代码:', mermaidCode);
+    
+    // 经过测试，Draw.io的URL参数导入有限制，直接使用基础URL更可靠
+    // 我们将依赖postMessage通信和用户指导来实现导入
+    return `${this.baseUrl}`;
+  }
+
+  /**
+   * 通过高级方法与Draw.io通信
+   * @param {Window} drawioWindow - Draw.io窗口引用
+   * @param {string} mermaidCode - Mermaid代码
+   */
+  setupDrawioIntegration(drawioWindow, mermaidCode) {
+    if (!drawioWindow || !mermaidCode) return;
+
+    let attemptCount = 0;
+    const maxAttempts = 8; // 8秒尝试时间
+    
+    // 等待Draw.io加载完成并尝试多种通信方式
+    const integrationInterval = setInterval(() => {
+      try {
+        if (drawioWindow.closed) {
+          clearInterval(integrationInterval);
+          return;
+        }
+
+        attemptCount++;
+        console.log(`Draw.io集成尝试 ${attemptCount}/${maxAttempts}`);
+
+        // 方法1: 尝试标准的Draw.io消息格式
+        const standardMessage = {
+          event: 'init'
+        };
+        drawioWindow.postMessage(JSON.stringify(standardMessage), 'https://app.diagrams.net');
+
+        // 方法2: 尝试Mermaid导入消息
+        const mermaidMessage = {
+          action: 'load',
+          autosave: 1,
+          xml: this.createSimpleDrawioXML(mermaidCode)
+        };
+        drawioWindow.postMessage(JSON.stringify(mermaidMessage), 'https://app.diagrams.net');
+
+        // 方法3: 尝试直接执行脚本（如果同源）
+        try {
+          if (drawioWindow.document) {
+            console.log('尝试直接脚本注入...');
+            this.injectMermaidScript(drawioWindow, mermaidCode);
+          }
+        } catch (crossOriginError) {
+          // 跨域限制，这是正常的
+          console.log('跨域限制，无法直接注入脚本');
+        }
+
+        // 达到最大尝试次数
+        if (attemptCount >= maxAttempts) {
+          clearInterval(integrationInterval);
+          console.log('自动导入尝试完成，显示用户指导');
+          
+          // 显示用户指导
+          setTimeout(() => {
+            if (!drawioWindow.closed) {
+              this.showDrawioInstructions(mermaidCode);
+            }
+          }, 500);
+        }
+
+      } catch (error) {
+        console.warn(`Draw.io通信尝试 ${attemptCount} 失败:`, error);
+      }
+    }, 1000);
+
+    // 监听来自Draw.io的消息
+    const messageListener = (event) => {
+      if (event.origin !== 'https://app.diagrams.net') return;
+      
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        console.log('收到Draw.io消息:', data);
+        
+        if (data.event === 'init' || data.event === 'configure') {
+          console.log('Draw.io已初始化，尝试加载Mermaid');
+          // Draw.io已准备就绪，尝试加载内容
+          const loadMessage = {
+            action: 'load',
+            xml: this.createSimpleDrawioXML(mermaidCode)
+          };
+          drawioWindow.postMessage(JSON.stringify(loadMessage), 'https://app.diagrams.net');
+        }
+      } catch (parseError) {
+        console.log('消息解析失败:', parseError);
+      }
     };
 
-    // 编码Mermaid代码
-    const encodedCode = encodeURIComponent(mermaidCode);
-    params.data = encodedCode;
+    window.addEventListener('message', messageListener);
+    
+    // 清理监听器
+    setTimeout(() => {
+      window.removeEventListener('message', messageListener);
+    }, 10000);
+  }
 
-    // 构建URL参数
-    const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        searchParams.append(key, value);
-      }
-    });
+  /**
+   * 创建简单的Draw.io XML格式
+   * @param {string} mermaidCode - Mermaid代码
+   * @returns {string} 简化的XML格式
+   */
+  createSimpleDrawioXML(mermaidCode) {
+    // 创建一个包含Mermaid代码的简单文本框
+    const escapedCode = mermaidCode.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    
+    return `<mxfile host="app.diagrams.net" modified="${new Date().toISOString()}">
+  <diagram name="Mermaid Flow" id="mermaid-flow">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="mermaid-text" value="${escapedCode}" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=12;fontFamily=monospace;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="400" height="200" as="geometry"/>
+        </mxCell>
+        <mxCell id="instruction" value="请复制上面的Mermaid代码，然后使用：插入 → 高级 → Mermaid" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="260" width="400" height="60" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>`;
+  }
 
-    return `${this.baseUrl}?${searchParams.toString()}`;
+  /**
+   * 尝试脚本注入（仅同源时可用）
+   * @param {Window} drawioWindow - Draw.io窗口
+   * @param {string} mermaidCode - Mermaid代码
+   */
+  injectMermaidScript(drawioWindow, mermaidCode) {
+    // 这个方法由于跨域限制通常不会成功，但值得尝试
+    const script = drawioWindow.document.createElement('script');
+    script.textContent = `
+      console.log('尝试自动导入Mermaid代码...');
+      // 这里可以添加直接操作Draw.io DOM的代码
+      // 但由于跨域限制，通常无法执行
+    `;
+    drawioWindow.document.head.appendChild(script);
+  }
+
+  /**
+   * 显示Draw.io使用指导
+   * @param {string} mermaidCode - Mermaid代码
+   */
+  showDrawioInstructions(mermaidCode) {
+    const instructions = `🎯 Draw.io自动导入提示：
+
+📋 Mermaid代码已复制到剪贴板！
+
+🚀 快速导入方法：
+1️⃣ 在Draw.io中按 Ctrl+Shift+I (或 Cmd+Shift+I)
+2️⃣ 选择 "Mermaid" 格式
+3️⃣ 粘贴代码 (Ctrl+V) 并点击 "导入"
+
+📝 或者使用传统方法：
+1️⃣ 点击左侧 "+" 按钮
+2️⃣ 选择 "更多图形" → "Mermaid"  
+3️⃣ 粘贴代码并点击 "插入"
+
+💡 提示：代码已自动复制，直接粘贴即可！`;
+    
+    alert(instructions);
   }
 
   /**
@@ -149,6 +296,14 @@ class DrawioService {
         .map(([key, value]) => `${key}=${value}`)
         .join(',');
 
+      // 自动复制Mermaid代码到剪贴板
+      try {
+        await navigator.clipboard.writeText(mermaidCode);
+        console.log('Mermaid代码已复制到剪贴板');
+      } catch (error) {
+        console.warn('无法自动复制到剪贴板:', error);
+      }
+
       // 打开新窗口
       const newWindow = window.open(drawioUrl, '_blank', featuresString);
 
@@ -156,19 +311,21 @@ class DrawioService {
         throw new Error('无法打开Draw.io编辑器，请检查浏览器弹窗设置');
       }
 
-      // 检查窗口是否被阻止
-      setTimeout(() => {
-        if (newWindow.closed) {
-          console.warn('Draw.io窗口可能被用户关闭或浏览器阻止');
-        }
-      }, 1000);
+      // 尝试自动化集成
+      this.setupDrawioIntegration(newWindow, mermaidCode);
 
       return {
         success: true,
-        message: 'Draw.io编辑器已打开',
+        message: 'Draw.io编辑器已打开，正在尝试自动导入...',
         url: drawioUrl,
         window: newWindow,
-        compatibility
+        compatibility,
+        autoImport: true,
+        hasAutoImportUrl: false, // 不再使用URL参数导入
+        fallbackInstructions: {
+          quickMethod: '按 Ctrl+Shift+I → 选择Mermaid → 粘贴代码',
+          traditionalMethod: '点击"+"按钮 → 更多图形 → Mermaid → 粘贴代码'
+        }
       };
 
     } catch (error) {
@@ -221,7 +378,7 @@ class DrawioService {
         {
           step: 1,
           title: '点击"Draw.io编辑"按钮',
-          description: '确保流程图数据已加载完成'
+          description: '确保流程图数据已加载完成，系统会自动复制Mermaid代码'
         },
         {
           step: 2,
@@ -230,13 +387,13 @@ class DrawioService {
         },
         {
           step: 3,
-          title: '开始编辑',
-          description: '在Draw.io中编辑和美化您的流程图'
+          title: '导入Mermaid图表',
+          description: '在Draw.io中：插入 → 高级 → Mermaid → 粘贴代码 → 插入'
         },
         {
           step: 4,
-          title: '保存和导出',
-          description: '使用Draw.io的保存和导出功能'
+          title: '编辑和导出',
+          description: '在Draw.io中编辑美化后，使用其导出功能保存'
         }
       ],
       troubleshooting: [

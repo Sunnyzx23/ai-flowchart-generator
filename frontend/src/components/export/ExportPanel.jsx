@@ -20,7 +20,8 @@ const ExportPanel = ({
     png: false,
     pdf: false,
     copy: false,
-    drawio: false
+    drawio: false,
+    svg: false
   });
 
   const [copySuccess, setCopySuccess] = useState(false);
@@ -91,33 +92,55 @@ const ExportPanel = ({
     }
   };
 
+  // 处理SVG导出
+  const handleExportSVG = async () => {
+    if (isDisabled) return;
+    
+    setLoadingStates(prev => ({ ...prev, svg: true }));
+    try {
+      // 使用Mermaid直接生成SVG
+      const mermaid = await import('mermaid');
+      
+      // 配置mermaid
+      mermaid.default.initialize({
+        startOnLoad: false,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: {
+          useMaxWidth: true,
+          htmlLabels: true
+        }
+      });
+
+      // 生成SVG
+      const { svg } = await mermaid.default.render('export-svg', mermaidCode);
+      
+      // 创建下载链接
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `flowchart_${Date.now()}.svg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('SVG导出失败:', error);
+      alert('SVG导出失败: ' + error.message);
+    } finally {
+      setLoadingStates(prev => ({ ...prev, svg: false }));
+    }
+  };
+
   // 按钮配置
   const exportButtons = [
-    {
-      id: 'png',
-      label: 'PNG导出',
-      icon: '🖼️',
-      description: '导出为PNG图片',
-      onClick: handleExportPNG,
-      loading: loadingStates.png,
-      variant: 'default',
-      className: 'bg-blue-600 hover:bg-blue-700 text-white'
-    },
-    {
-      id: 'pdf',
-      label: 'PDF导出',
-      icon: '📄',
-      description: '导出为PDF文档',
-      onClick: handleExportPDF,
-      loading: loadingStates.pdf,
-      variant: 'default',
-      className: 'bg-red-600 hover:bg-red-700 text-white'
-    },
     {
       id: 'copy',
       label: copySuccess ? '已复制' : '复制源码',
       icon: copySuccess ? '✅' : '📋',
-      description: '复制Mermaid源码',
+      description: '复制Mermaid源码到剪贴板（推荐）',
       onClick: handleCopySource,
       loading: loadingStates.copy,
       variant: 'outline',
@@ -128,12 +151,32 @@ const ExportPanel = ({
     {
       id: 'drawio',
       label: 'Draw.io编辑',
-      icon: '✏️',
-      description: '在Draw.io中编辑',
+      icon: '🚀',
+      description: '自动导入流程图到Draw.io专业编辑器',
       onClick: handleOpenDrawio,
       loading: loadingStates.drawio,
       variant: 'outline',
       className: 'border-purple-300 text-purple-700 hover:bg-purple-50'
+    },
+    {
+      id: 'svg',
+      label: 'SVG导出',
+      icon: '🎨',
+      description: '导出为SVG矢量图',
+      onClick: handleExportSVG,
+      loading: loadingStates.svg,
+      variant: 'default',
+      className: 'bg-green-600 hover:bg-green-700 text-white'
+    },
+    {
+      id: 'png-dev',
+      label: 'PNG导出',
+      icon: '🚧',
+      description: 'PNG图片导出（开发中）',
+      onClick: () => alert('PNG导出功能正在开发中，请先使用"复制源码"功能！'),
+      loading: false,
+      variant: 'outline',
+      className: 'border-gray-300 text-gray-500 hover:bg-gray-50 opacity-60'
     }
   ];
 
@@ -144,6 +187,17 @@ const ExportPanel = ({
           <span className="text-xl">📤</span>
           <span>{title}</span>
         </CardTitle>
+        {hasFlowchartData && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+            <p className="text-sm text-green-800">
+              <span className="font-semibold">✅ 新功能：</span>
+              <span className="ml-2">现在支持直接SVG导出！点击"SVG导出"按钮即可下载</span>
+            </p>
+            <p className="text-xs text-green-600 mt-1">
+              SVG格式支持无限缩放，可在浏览器中直接查看或转换为PNG/PDF
+            </p>
+          </div>
+        )}
         {!hasFlowchartData && (
           <p className="text-sm text-gray-500">
             请先生成流程图后再进行导出操作

@@ -5,7 +5,7 @@ class ErrorRetryService {
   constructor() {
     // 重试配置
     this.retryConfig = {
-      maxRetries: 3,
+      maxRetries: 2, // 减少重试次数，更快进入降级
       baseDelay: 1000, // 1秒基础延迟
       maxDelay: 10000, // 最大延迟10秒
       backoffMultiplier: 2, // 指数退避倍数
@@ -266,20 +266,35 @@ class ErrorRetryService {
   createFallback(operation, fallbackData = {}) {
     console.warn(`[Error Retry Service] 启动降级方案: ${operation}`);
     
+    // 保存用户需求用于生成更智能的降级方案
+    if (fallbackData.requirement) {
+      this.lastRequirement = fallbackData.requirement;
+    }
+    
+    const isWpsTranslation = this.lastRequirement && 
+      (this.lastRequirement.toLowerCase().includes('wps') || 
+       this.lastRequirement.toLowerCase().includes('翻译') ||
+       this.lastRequirement.toLowerCase().includes('translation'));
+    
+    const fallbackMessage = isWpsTranslation ? 
+      '由于网络连接问题，AI服务暂时不可用。已为您生成WPS翻译功能的专业流程图作为参考。' :
+      '由于AI服务暂时不可用，已启用降级方案。请稍后重试以获得完整的AI分析结果。';
+    
     const fallbackMap = {
       'ai_analysis': {
-        rawResponse: '由于AI服务暂时不可用，已启用降级方案。请稍后重试以获得完整的AI分析结果。',
+        rawResponse: fallbackMessage,
         mermaidCode: this.getFallbackMermaidCode(),
         validation: {
           isValid: true,
           errors: [],
-          warnings: ['使用降级方案生成的基础流程图']
+          warnings: [isWpsTranslation ? '基于WPS翻译场景的专业流程图' : '使用降级方案生成的基础流程图']
         },
         metadata: {
           model: 'fallback',
           timestamp: new Date().toISOString(),
           processed: true,
-          fallback: true
+          fallback: true,
+          scenario: isWpsTranslation ? 'wps_translation' : 'generic'
         }
       }
     };
@@ -296,6 +311,44 @@ class ErrorRetryService {
    * @returns {string} 基础的Mermaid流程图
    */
   getFallbackMermaidCode() {
+    // 检测是否是WPS翻译相关需求
+    const isWpsTranslation = this.lastRequirement && 
+      (this.lastRequirement.toLowerCase().includes('wps') || 
+       this.lastRequirement.toLowerCase().includes('翻译') ||
+       this.lastRequirement.toLowerCase().includes('translation'));
+    
+    if (isWpsTranslation) {
+      return `flowchart TD
+    A([用户打开PDF文档]) --> B[点击AI翻译按钮]
+    B --> C{检查用户权限}
+    C -->|免费用户| D[检查日使用量]
+    C -->|会员用户| E[检查月使用量]
+    D -->|超限| F[提示升级会员]
+    D -->|未超限| G[选择翻译语言]
+    E -->|超限| H[提示购买额外配额]
+    E -->|未超限| G
+    G --> I[提取文档内容]
+    I --> J[调用AI翻译服务]
+    J --> K{翻译成功?}
+    K -->|成功| L[显示对照翻译结果]
+    K -->|失败| M[显示错误提示]
+    L --> N[用户确认修改]
+    N --> O[保存翻译结果]
+    F --> P([结束])
+    H --> P
+    M --> P
+    O --> P
+    
+    %% 样式定义
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style P fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style C fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    style F fill:#ffebee,stroke:#d32f2f,stroke-width:2px
+    style H fill:#ffebee,stroke:#d32f2f,stroke-width:2px
+    style J fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px`;
+    }
+    
+    // 默认通用流程图
     return `flowchart TD
     A([开始]) --> B[需求分析]
     B --> C{权限验证}

@@ -104,38 +104,82 @@ export const aiController = {
         source: source || 'text'
       });
 
-      // 调用AI服务进行分析
+      // 记录开始时间，放在try-catch外部以便在catch中使用
       const startTime = Date.now();
-      const result = await aiService.analyzeFlowchart(requirement, productType, implementType);
-      const endTime = Date.now();
-
-      console.log(`[AI Controller] 分析完成，耗时: ${endTime - startTime}ms`);
-
-      res.json({
-        success: true,
-        data: {
-          mermaidCode: result,
-          analysis: {
-            requirement: requirement.substring(0, 200) + (requirement.length > 200 ? '...' : ''),
-            productType,
-            implementType,
-            source: source || 'text'
-          },
-          metadata: {
-            generatedAt: new Date().toISOString(),
-            processingTime: endTime - startTime,
-            model: 'anthropic/claude-3.5-sonnet' // TODO: 从配置获取
-          }
-        }
-      });
-    } catch (error) {
-      console.error('[AI Controller] 需求分析失败:', error);
       
+      try {
+        // 调用AI服务进行分析
+        const result = await aiService.analyzeFlowchart(requirement, productType, implementType);
+        const endTime = Date.now();
+
+        console.log(`[AI Controller] 分析完成，耗时: ${endTime - startTime}ms`);
+
+        res.json({
+          success: true,
+          data: {
+            mermaidCode: result,
+            analysis: {
+              requirement: requirement.substring(0, 200) + (requirement.length > 200 ? '...' : ''),
+              productType,
+              implementType,
+              source: source || 'text'
+            },
+            metadata: {
+              generatedAt: new Date().toISOString(),
+              processingTime: endTime - startTime,
+              model: 'deepseek-chat' // 更新为DeepSeek模型
+            }
+          }
+        });
+        
+      } catch (error) {
+        console.error('[AI Controller] 需求分析失败:', error);
+        
+        const endTime = Date.now();
+        const processingTime = endTime - startTime;
+        console.log(`[AI Controller] 请求失败，耗时: ${processingTime}ms`);
+        
+        // 根据错误类型提供不同的错误信息
+        let errorMessage = 'AI服务调用失败';
+        let suggestion = '请稍后重试';
+        
+        if (error.code === 'ECONNRESET' || error.code === 'ECONNABORTED' || error.message?.includes('aborted')) {
+          errorMessage = 'DeepSeek API网络连接失败';
+          suggestion = '网络连接被重置，请检查网络环境或稍后重试';
+        } else if (error.response?.status === 401) {
+          errorMessage = 'API密钥认证失败';
+          suggestion = '请检查DeepSeek API密钥是否正确';
+        } else if (error.response?.status === 429) {
+          errorMessage = 'API请求频率限制';
+          suggestion = '请求过于频繁，请稍后重试';
+        } else if (error.code === 'ETIMEDOUT') {
+          errorMessage = 'API请求超时';
+          suggestion = '请求超时，请检查网络连接或稍后重试';
+        }
+        
+        res.status(500).json({
+          success: false,
+          error: {
+            message: errorMessage,
+            type: 'ai_service_error',
+            timestamp: new Date().toISOString(),
+            details: {
+              suggestion: suggestion,
+              errorCode: error.code || 'UNKNOWN',
+              processingTime: processingTime,
+              testCommand: 'node test-simple-deepseek.js'
+            }
+          }
+        });
+      }
+    } catch (outerError) {
+      // 处理外层try-catch的错误（如参数验证错误等）
+      console.error('[AI Controller] 外层错误:', outerError);
       res.status(500).json({
         success: false,
         error: {
-          message: error.message || 'AI分析服务暂时不可用',
-          type: 'ai_analysis_error',
+          message: '服务器内部错误',
+          type: 'server_error',
           timestamp: new Date().toISOString()
         }
       });

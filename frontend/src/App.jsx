@@ -1,37 +1,31 @@
 import React, { useState } from 'react';
 import Layout from './components/layout/Layout';
 import InputPage from './pages/InputPage';
-import AIAnalysisDemo from './pages/AIAnalysisDemo';
-import FlowchartDemo from './pages/FlowchartDemo';
-import IntegrationTest from './pages/IntegrationTest';
-import ExportDemo from './pages/ExportDemo';
+import FlowchartResult from './pages/FlowchartResult';
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from './components/ui';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'input' | 'demo' | 'flowchart' | 'integration' | 'export'
+  const [currentPage, setCurrentPage] = useState('input'); // 'input' | 'result'
+  const [flowchartResult, setFlowchartResult] = useState(null);
 
   if (currentPage === 'input') {
-    return <InputPage />;
+    return <InputPage onNavigate={setCurrentPage} currentPage={currentPage} onResult={(result) => {
+      setFlowchartResult(result);
+      setCurrentPage('result');
+    }} />;
   }
 
-  if (currentPage === 'demo') {
-    return <AIAnalysisDemo />;
-  }
-
-  if (currentPage === 'flowchart') {
-    return <FlowchartDemo />;
-  }
-
-  if (currentPage === 'integration') {
-    return <IntegrationTest />;
-  }
-
-  if (currentPage === 'export') {
-    return <ExportDemo />;
+  if (currentPage === 'result') {
+    return <FlowchartResult 
+      onNavigate={setCurrentPage} 
+      currentPage={currentPage} 
+      resultData={flowchartResult}
+      onBack={() => setCurrentPage('input')}
+    />;
   }
 
   return (
-    <Layout>
+    <Layout onNavigate={setCurrentPage} currentPage={currentPage}>
       <div className="space-y-8">
         {/* 欢迎区域 */}
         <div className="text-center">
@@ -98,43 +92,13 @@ function App() {
         </div>
 
         {/* 操作按钮区域 */}
-        <div className="text-center space-x-4">
+        <div className="text-center">
           <Button 
             size="lg"
             onClick={() => setCurrentPage('input')}
           >
             开始创建流程图
           </Button>
-          <Button 
-            variant="secondary" 
-            size="lg"
-            onClick={() => setCurrentPage('demo')}
-          >
-            AI组件演示
-          </Button>
-                          <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setCurrentPage('flowchart')}
-                >
-                  流程图预览
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setCurrentPage('integration')}
-                  className="border-purple-200 text-purple-700 hover:bg-purple-50"
-                >
-                  集成测试
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setCurrentPage('export')}
-                  className="border-orange-200 text-orange-700 hover:bg-orange-50"
-                >
-                  导出功能
-                </Button>
         </div>
 
         {/* 状态展示 */}

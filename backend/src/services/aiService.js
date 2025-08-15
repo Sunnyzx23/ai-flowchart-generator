@@ -6,14 +6,14 @@ import mermaidGenerator from './mermaidGenerator.js';
 import errorRetryService from './errorRetryService.js';
 
 /**
- * AI服务 - OpenRouter API集成 + Prompt组装
+ * AI服务 - DeepSeek API集成 + Prompt组装
  */
 class AIService {
   constructor() {
-    this.apiKey = config.openrouter.apiKey;
-    this.baseURL = config.openrouter.baseURL || 'https://openrouter.ai/api/v1';
-    this.defaultModel = config.openrouter.defaultModel || 'anthropic/claude-3.5-sonnet';
-    this.timeout = config.openrouter.timeout || 30000; // 30秒超时
+    this.apiKey = config.deepseek.apiKey;
+    this.baseURL = config.deepseek.baseURL || 'https://api.deepseek.com/v1';
+    this.defaultModel = config.deepseek.defaultModel || 'deepseek-chat';
+    this.timeout = config.deepseek.timeout || 15000; // 15秒超时，更快触发降级
     
     // 加载prompt配置
     this.promptConfig = this.loadPromptConfig();
@@ -112,44 +112,52 @@ class AIService {
   buildPrompt(requirement, productType = 'web', implementType = 'uncertain') {
     const config = this.promptConfig;
     
-    // 获取产品类型的特殊说明
-    const productAdjustment = config.productTypeAdjustments?.[productType] || '';
+    // 获取产品类型上下文
+    const productContext = config.productTypeContext?.[productType];
+    const productFocus = productContext ? productContext.focus : '';
+    const considerations = productContext ? productContext.considerations.join('、') : '';
     
-    // 组装7维度分析部分
-    const dimensionsText = config.analysisFramework.dimensions.map((dim, index) => 
-      `${index + 1}. **${dim.name}**：${dim.description}`
-    ).join('\n');
+    // 检测特定业务场景
+    const isWpsTranslation = requirement.toLowerCase().includes('wps') && 
+                           (requirement.includes('翻译') || requirement.includes('translation'));
     
-    // 组装输出要求部分
-    const requirementsText = config.outputFormat.requirements.map(req => 
-      `• ${req}`
-    ).join('\n');
-    
-    // 组装约束条件部分
-    const constraintsText = config.constraints?.map(constraint => 
-      `• ${constraint}`
-    ).join('\n') || '';
+    let scenarioGuidance = '';
+    if (isWpsTranslation && config.businessScenarios?.wps_translation) {
+      const scenario = config.businessScenarios.wps_translation;
+      scenarioGuidance = `
 
-    // 构建完整prompt
+【业务场景参考】：
+核心流程应包含：${scenario.keyFlows.join(' → ')}
+商业逻辑要点：${scenario.businessLogic.join('、')}`;
+    }
+
+    // 构建智能分析prompt
     const prompt = `${config.systemRole}
 
 【用户需求】：${requirement}
-【产品类型】：${productType}${productAdjustment ? ` - ${productAdjustment}` : ''}
+【产品类型】：${productType}${productFocus ? ` - ${productFocus}` : ''}
 【实现方式】：${implementType}
+${productContext ? `【技术考虑】：${considerations}` : ''}${scenarioGuidance}
 
-${config.analysisFramework.instruction}
+【智能分析任务】：
+你需要基于以上简单需求描述，主动进行深度业务分析：
 
-${dimensionsText}
-
-${config.outputFormat.instruction}
+1. **场景理解**：深入理解业务场景，识别关键角色、核心功能和使用环境
+2. **流程推断**：基于行业经验和产品逻辑，推断出完整的业务流程  
+3. **关键节点识别**：识别权限验证、付费节点、AI调用、异常处理等关键业务节点
+4. **商业逻辑分析**：分析商业化机会、用户付费意愿、会员权益等商业逻辑
+5. **用户体验优化**：考虑用户操作便利性、反馈及时性、错误恢复等体验要素
 
 【输出要求】：
-${requirementsText}
+${config.outputFormat.requirements.map(req => `• ${req}`).join('\n')}
 
-【约束条件】：
-${constraintsText}
+【质量标准】：
+${config.qualityStandards.map(std => `• ${std}`).join('\n')}
 
-请严格按照以上要求生成Mermaid流程图代码，确保语法正确且逻辑完整。`;
+【重要提醒】：
+${config.examplePrompt}
+
+请基于以上分析，生成具有实际业务价值的专业流程图，使用标准Mermaid语法。`;
 
     return prompt;
   }

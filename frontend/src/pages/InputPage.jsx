@@ -3,7 +3,7 @@ import Layout from '../components/layout/Layout';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui';
 import RequirementInputForm from '../components/input/RequirementInputForm';
 
-const InputPage = () => {
+const InputPage = ({ onNavigate, currentPage, onResult }) => {
   const [inputData, setInputData] = useState({
     content: '',
     productType: '',
@@ -17,11 +17,46 @@ const InputPage = () => {
 
   const handleSubmit = async (data) => {
     console.log('提交数据:', data);
-    // TODO: 调用API发送数据到后端
+    
+    try {
+      // 调用AI分析API
+      const response = await fetch('http://localhost:3001/api/ai/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requirement: data.content,
+          productType: data.productType,
+          implementType: data.implementType,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('AI分析结果:', result);
+
+      if (result.success) {
+        // 成功后跳转到结果页面
+        if (onResult) {
+          onResult(result);
+        } else {
+          alert('流程图生成成功！请查看控制台了解详情');
+        }
+      } else {
+        throw new Error(result.error?.message || '分析失败');
+      }
+    } catch (error) {
+      console.error('提交失败:', error);
+      alert('提交失败: ' + error.message);
+    }
   };
 
   return (
-    <Layout>
+    <Layout onNavigate={onNavigate} currentPage={currentPage}>
       <div className="max-w-4xl mx-auto space-y-8">
         {/* 页面标题 */}
         <div className="text-center">
@@ -50,20 +85,7 @@ const InputPage = () => {
           </CardContent>
         </Card>
 
-        {/* 使用提示 */}
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="pt-6">
-            <h3 className="text-lg font-medium text-blue-900 mb-3">
-              💡 使用提示
-            </h3>
-            <ul className="text-sm text-blue-800 space-y-2">
-              <li>• <strong>文本输入</strong>：直接描述您的业务需求，建议不少于10个字</li>
-              <li>• <strong>文件上传</strong>：支持拖拽或点击上传，最大文件大小10MB</li>
-              <li>• <strong>产品形态</strong>：选择您要设计流程图的目标产品类型</li>
-              <li>• <strong>实现方式</strong>：选择功能的技术实现方案，AI会据此优化流程设计</li>
-            </ul>
-          </CardContent>
-        </Card>
+
       </div>
     </Layout>
   );

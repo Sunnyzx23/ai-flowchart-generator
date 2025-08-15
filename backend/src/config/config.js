@@ -10,12 +10,12 @@ const config = {
   // CORS配置
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   
-  // OpenRouter配置
-  openrouter: {
-    apiKey: process.env.OPENROUTER_API_KEY || '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',
-    baseURL: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
-    defaultModel: process.env.DEFAULT_MODEL || 'anthropic/claude-3.5-sonnet',
-    backupModel: process.env.BACKUP_MODEL || 'openai/gpt-4',
+  // DeepSeek配置
+  deepseek: {
+    apiKey: process.env.DEEPSEEK_API_KEY || 'your_deepseek_api_key_here',
+    baseURL: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1',
+    defaultModel: process.env.DEFAULT_MODEL || 'deepseek-chat',
+    backupModel: process.env.BACKUP_MODEL || 'deepseek-coder',
     timeout: parseInt(process.env.AI_TIMEOUT) || 30000
   },
   
