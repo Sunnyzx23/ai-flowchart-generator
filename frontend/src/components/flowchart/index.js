@@ -7,6 +7,8 @@ export { default as FlowchartToolbar } from './FlowchartToolbar';
 export { default as FlowchartStatusBar } from './FlowchartStatusBar';
 export { default as FlowchartInteraction } from './FlowchartInteraction';
 export { default as FlowchartContainer, FlowchartGrid, FlowchartSplitView } from './FlowchartContainer';
+export { default as FlowchartCanvas } from './FlowchartCanvas';
+export { default as FlowchartThemeSelector } from './FlowchartThemeSelector';
 
 // 流程图主题和样式
 export * from './FlowchartThemes';

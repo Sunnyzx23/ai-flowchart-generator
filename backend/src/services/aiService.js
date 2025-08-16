@@ -13,7 +13,7 @@ class AIService {
     this.apiKey = config.deepseek.apiKey;
     this.baseURL = config.deepseek.baseURL || 'https://api.deepseek.com/v1';
     this.defaultModel = config.deepseek.defaultModel || 'deepseek-chat';
-    this.timeout = config.deepseek.timeout || 15000; // 15秒超时，更快触发降级
+    this.timeout = config.deepseek.timeout || 45000; // 45秒超时，给DeepSeek更多时间
     
     // 加载prompt配置
     this.promptConfig = this.loadPromptConfig();
@@ -25,7 +25,6 @@ class AIService {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': config.app.url || 'http://localhost:3001'
-        // 移除X-Title header，避免OpenRouter问题
       }
     });
 
@@ -60,6 +59,16 @@ class AIService {
    */
   loadPromptConfig() {
     try {
+      // 优先尝试加载简化版本
+      const simpleConfigPath = path.join(process.cwd(), 'config', 'prompt-simple.json');
+      if (fs.existsSync(simpleConfigPath)) {
+        const configData = fs.readFileSync(simpleConfigPath, 'utf8');
+        const config = JSON.parse(configData);
+        console.log(`[AI Service] 加载简化Prompt配置成功，版本: ${config.version}`);
+        return config;
+      }
+      
+      // 回退到完整版本
       const configPath = path.join(process.cwd(), 'config', 'prompt.json');
       const configData = fs.readFileSync(configPath, 'utf8');
       const config = JSON.parse(configData);
@@ -112,7 +121,15 @@ class AIService {
   buildPrompt(requirement, productType = 'web', implementType = 'uncertain') {
     const config = this.promptConfig;
     
-    // 获取产品类型上下文
+    // 如果是简化版本配置，使用简化模板
+    if (config.template) {
+      return config.template
+        .replace('{requirement}', requirement)
+        .replace('{productType}', productType)
+        .replace('{implementType}', implementType);
+    }
+    
+    // 原有的完整版本逻辑
     const productContext = config.productTypeContext?.[productType];
     const productFocus = productContext ? productContext.focus : '';
     const considerations = productContext ? productContext.considerations.join('、') : '';

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mermaid 渲染测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .mermaid-container {
+            background: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin: 20px 0;
+            min-height: 400px;
+        }
+        .code-block {
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success { background: #e8f5e8; color: #2e7d2e; }
+        .status.error { background: #ffebee; color: #c62828; }
+        .status.info { background: #e3f2fd; color: #1976d2; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.9.0/dist/mermaid.min.js"></script>
+</head>
+<body>
+    <h1>Mermaid 流程图渲染测试</h1>
+    
+    <div class="container">
+        <h2>测试数据</h2>
+        <p>这是从后端API返回的实际Mermaid代码：</p>
+        <div class="code-block" id="mermaidCode"></div>
+    </div>
+
+    <div class="container">
+        <h2>渲染结果</h2>
+        <div id="status" class="status info">正在渲染流程图...</div>
+        <div class="mermaid-container" id="mermaidDiagram"></div>
+    </div>
+
+    <script>
+        // 从后端获取的实际Mermaid代码
+        const mermaidCode = `flowchart TD
+    A[用户打开PDF文档] --> B[点击AI全文对照翻译入口]
+    B --> C{是否已登录?}
+    C -->|否| D[弹出登录窗口]
+    D --> E[用户完成登录/注册]
+    E --> F{是否拥有QI权益?}
+    C -->|是| F
+    F -->|免费用户| G[显示免费翻译额度提示]
+    G --> H{是否继续使用?}
+    H -->|是| I[执行基础质量翻译]
+    H -->|否| J[返回文档浏览]
+    F -->|QI会员| K[执行高质量AI翻译]
+    I --> L[显示翻译结果对照界面]
+    K --> L
+    L --> M{用户操作判断}
+    M -->|满意| N[完成使用]
+    M -->|不满意| O[提供反馈入口]
+    O --> P[收集反馈并优化]
+    M -->|升级权益| Q[跳转会员购买页]
+    Q --> R[用户完成支付]
+    R --> K
+    N --> S[结束流程]
+    J --> S`;
+
+        // 显示代码
+        document.getElementById('mermaidCode').textContent = mermaidCode;
+
+        // 配置并渲染Mermaid
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true
+            }
+        });
+
+        async function renderMermaid() {
+            try {
+                const element = document.getElementById('mermaidDiagram');
+                element.innerHTML = '';
+                
+                // 渲染图表
+                const { svg } = await mermaid.render('flowchart-test', mermaidCode);
+                element.innerHTML = svg;
+                
+                document.getElementById('status').className = 'status success';
+                document.getElementById('status').textContent = '✅ 流程图渲染成功！';
+                
+            } catch (error) {
+                console.error('Mermaid渲染失败:', error);
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = `❌ 渲染失败: ${error.message}`;
+                
+                const element = document.getElementById('mermaidDiagram');
+                element.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-center: center; height: 200px; text-align: center; color: #c62828;">
+                        <div>
+                            <h3>流程图渲染失败</h3>
+                            <p>错误: ${error.message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 页面加载完成后渲染
+        document.addEventListener('DOMContentLoaded', renderMermaid);
+    </script>
+</body>
+</html>

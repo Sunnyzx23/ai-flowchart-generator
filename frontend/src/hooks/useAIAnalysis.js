@@ -43,7 +43,7 @@ export const useAIAnalysis = () => {
       }));
 
       // 调用后端API创建分析会话
-      const response = await fetch('/api/v1/analysis/create', {
+      const response = await fetch('http://localhost:3001/api/v1/analysis/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,13 +57,17 @@ export const useAIAnalysis = () => {
 
       const data = await response.json();
       
+      if (!data.success || !data.data || !data.data.sessionId) {
+        throw new Error(data.error?.message || '创建分析会话失败');
+      }
+      
       setAnalysisState(prev => ({
         ...prev,
-        sessionId: data.sessionId
+        sessionId: data.data.sessionId
       }));
 
       // 开始状态轮询
-      startStatusPolling(data.sessionId);
+      startStatusPolling(data.data.sessionId);
       
     } catch (error) {
       setAnalysisState(prev => ({
@@ -78,24 +82,30 @@ export const useAIAnalysis = () => {
   const startStatusPolling = useCallback((sessionId) => {
     const pollStatus = async () => {
       try {
-        const response = await fetch(`/api/v1/analysis/${sessionId}`);
+        const response = await fetch(`http://localhost:3001/api/v1/analysis/${sessionId}`);
         if (!response.ok) {
           throw new Error('状态查询失败');
         }
 
         const data = await response.json();
         
+        if (!data.success || !data.data) {
+          throw new Error(data.error?.message || '状态查询失败');
+        }
+        
+        const analysisData = data.data;
+        
         setAnalysisState(prev => ({
           ...prev,
-          status: data.status,
-          progress: data.progress || prev.progress,
-          message: data.message || prev.message,
-          result: data.result || prev.result,
-          error: data.error || prev.error
+          status: analysisData.status,
+          progress: analysisData.progress?.percentage || prev.progress,
+          message: analysisData.progress?.message || analysisData.message || prev.message,
+          result: analysisData.result || prev.result,
+          error: analysisData.error || prev.error
         }));
 
         // 如果分析完成或出错，停止轮询
-        if (data.status === 'completed' || data.status === 'error') {
+        if (analysisData.status === 'completed' || analysisData.status === 'error') {
           clearInterval(statusCheckTimerRef.current);
         }
 
@@ -146,7 +156,7 @@ export const useAIAnalysis = () => {
   const cancelAnalysis = useCallback(async () => {
     if (analysisState.sessionId) {
       try {
-        await fetch(`/api/v1/analysis/${analysisState.sessionId}`, {
+        await fetch(`http://localhost:3001/api/v1/analysis/${analysisState.sessionId}`, {
           method: 'DELETE'
         });
       } catch (error) {

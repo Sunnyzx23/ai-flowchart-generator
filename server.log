@@ -1,18 +1,8 @@
-node:internal/modules/cjs/loader:1408
-  throw err;
-  ^
-
-Error: Cannot find module '/Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/server.js'
-    at Function._resolveFilename (node:internal/modules/cjs/loader:1405:15)
-    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)
-    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)
-    at Function._load (node:internal/modules/cjs/loader:1215:37)
-    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:151:5)
-    at node:internal/main/run_main_module:33:47 {
-  code: 'MODULE_NOT_FOUND',
-  requireStack: []
-}
-
-Node.js v23.11.0
+npm error code ENOENT
+npm error syscall open
+npm error path /Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/package.json
+npm error errno -2
+npm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open '/Users/sunnyzx-wps/Documents/ai_tools/ai_to_md/package.json'
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: /Users/sunnyzx-wps/.npm/_logs/2025-08-15T01_52_06_304Z-debug-0.log

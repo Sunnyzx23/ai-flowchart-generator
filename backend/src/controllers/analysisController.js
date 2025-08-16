@@ -39,7 +39,7 @@ export const analysisController = {
       
       // 异步执行分析
       setImmediate(() => {
-        this.executeAnalysis(session.id);
+        analysisController.executeAnalysis(session.id);
       });
       
       res.json({
@@ -123,7 +123,7 @@ export const analysisController = {
       res.json({
         success: true,
         data: responseData,
-        message: this.getStatusMessage(session.status)
+        message: analysisController.getStatusMessage(session.status)
       });
       
     } catch (error) {

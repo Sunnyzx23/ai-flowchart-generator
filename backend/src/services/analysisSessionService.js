@@ -241,24 +241,44 @@ class AnalysisSessionService {
   cleanupExpiredSessions() {
     const now = Date.now();
     const timeout = this.config.sessionTimeout;
+    const completedSessionTimeout = timeout * 2; // 已完成的会话保留更长时间
     const expiredSessions = [];
     
     for (const [sessionId, session] of this.sessions) {
-      // 检查是否超时
-      if (now - session.metadata.startTime > timeout) {
+      let shouldCleanup = false;
+      
+      // 对于进行中的会话，使用正常超时时间
+      if (session.status === this.AnalysisStatus.PROCESSING || 
+          session.status === this.AnalysisStatus.PENDING) {
+        if (now - session.metadata.startTime > timeout) {
+          shouldCleanup = true;
+          // 设置超时状态
+          this.updateSession(sessionId, this.AnalysisStatus.TIMEOUT, {
+            error: { message: '分析超时，请重新尝试', type: 'timeout' }
+          });
+        }
+      } 
+      // 对于已完成的会话，使用更长的保留时间
+      else if (session.status === this.AnalysisStatus.COMPLETED || 
+               session.status === this.AnalysisStatus.ERROR) {
+        if (now - session.metadata.startTime > completedSessionTimeout) {
+          shouldCleanup = true;
+        }
+      }
+      // 其他状态的会话使用正常超时时间
+      else {
+        if (now - session.metadata.startTime > timeout) {
+          shouldCleanup = true;
+        }
+      }
+      
+      if (shouldCleanup) {
         expiredSessions.push(sessionId);
       }
     }
     
-    // 删除超时会话
+    // 删除过期会话
     expiredSessions.forEach(sessionId => {
-      const session = this.sessions.get(sessionId);
-      if (session && (session.status === this.AnalysisStatus.PROCESSING || 
-                     session.status === this.AnalysisStatus.PENDING)) {
-        this.updateSession(sessionId, this.AnalysisStatus.TIMEOUT, {
-          error: { message: '分析超时，请重新尝试', type: 'timeout' }
-        });
-      }
       this.deleteSession(sessionId);
     });
     

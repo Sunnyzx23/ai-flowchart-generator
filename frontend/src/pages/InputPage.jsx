@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui';
 import RequirementInputForm from '../components/input/RequirementInputForm';
+import { useAIAnalysis } from '../hooks/useAIAnalysis';
+import AIAnalysisProgress from '../components/ai/AIAnalysisProgress';
+import AIErrorAlert from '../components/ai/AIErrorAlert';
 
 const InputPage = ({ onNavigate, currentPage, onResult }) => {
   const [inputData, setInputData] = useState({
@@ -11,6 +14,21 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
     inputMethod: 'text' // 'text' or 'file'
   });
 
+  // 使用AI分析Hook
+  const {
+    status,
+    progress,
+    message,
+    result,
+    error,
+    isLoading,
+    isCompleted,
+    isError,
+    startAnalysis,
+    resetAnalysis,
+    retryAnalysis
+  } = useAIAnalysis();
+
   const handleInputChange = (newData) => {
     setInputData(prev => ({ ...prev, ...newData }));
   };
@@ -19,40 +37,36 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
     console.log('提交数据:', data);
     
     try {
-      // 调用AI分析API
-      const response = await fetch('http://localhost:3001/api/ai/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          requirement: data.content,
-          productType: data.productType,
-          implementType: data.implementType,
-        }),
+      // 使用新的会话管理API
+      await startAnalysis({
+        requirement: data.content,
+        productType: data.productType,
+        implementType: data.implementType,
+        inputMethod: data.inputMethod
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('AI分析结果:', result);
-
-      if (result.success) {
-        // 成功后跳转到结果页面
-        if (onResult) {
-          onResult(result);
-        } else {
-          alert('流程图生成成功！请查看控制台了解详情');
-        }
-      } else {
-        throw new Error(result.error?.message || '分析失败');
-      }
     } catch (error) {
       console.error('提交失败:', error);
-      alert('提交失败: ' + error.message);
     }
+  };
+
+  // 监听分析完成事件
+  useEffect(() => {
+    if (isCompleted && result) {
+      console.log('AI分析完成:', result);
+      if (onResult) {
+        onResult(result);
+      }
+    }
+  }, [isCompleted, result, onResult]);
+
+  // 重试处理
+  const handleRetry = () => {
+    retryAnalysis({
+      requirement: inputData.content,
+      productType: inputData.productType,
+      implementType: inputData.implementType,
+      inputMethod: inputData.inputMethod
+    });
   };
 
   return (
@@ -81,9 +95,33 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
               data={inputData}
               onChange={handleInputChange}
               onSubmit={handleSubmit}
+              isSubmitting={isLoading}
             />
           </CardContent>
         </Card>
+
+        {/* AI分析进度显示 */}
+        {isLoading && (
+          <Card>
+            <CardContent className="pt-6">
+              <AIAnalysisProgress
+                status={status}
+                progress={progress}
+                message={message}
+                onCancel={resetAnalysis}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 错误处理 */}
+        {isError && error && (
+          <AIErrorAlert
+            error={error}
+            onRetry={handleRetry}
+            onDismiss={resetAnalysis}
+          />
+        )}
 
 
       </div>

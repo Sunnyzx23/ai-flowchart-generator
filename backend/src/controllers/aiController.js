@@ -16,7 +16,7 @@ export const aiController = {
         success: true,
         data: {
           status: isConnected ? 'connected' : 'disconnected',
-          service: 'OpenRouter API',
+          service: 'DeepSeek API',
           timestamp: new Date().toISOString()
         }
       });

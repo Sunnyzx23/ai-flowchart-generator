@@ -190,8 +190,22 @@ export const exportController = {
       }
 
       // 设置响应头
-      const format = this.getFormatFromFileName(fileName);
-      const mimeType = this.getMimeType(format);
+      const getFormatFromFileName = (fileName) => {
+        const ext = path.extname(fileName).toLowerCase().slice(1);
+        return ext || 'unknown';
+      };
+      
+      const getMimeType = (format) => {
+        const mimeTypes = {
+          png: 'image/png',
+          pdf: 'application/pdf',
+          svg: 'image/svg+xml'
+        };
+        return mimeTypes[format] || 'application/octet-stream';
+      };
+      
+      const format = getFormatFromFileName(fileName);
+      const mimeType = getMimeType(format);
       
       res.setHeader('Content-Type', mimeType);
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
@@ -319,7 +333,7 @@ export const exportController = {
    * @param {string} format - 文件格式
    * @returns {string} MIME类型
    */
-  getMimeType: (format) => {
+  getMimeType(format) {
     const mimeTypes = {
       png: 'image/png',
       pdf: 'application/pdf',
@@ -333,7 +347,7 @@ export const exportController = {
    * @param {string} fileName - 文件名
    * @returns {string} 格式
    */
-  getFormatFromFileName: (fileName) => {
+  getFormatFromFileName(fileName) {
     const ext = path.extname(fileName).toLowerCase().slice(1);
     return ext || 'unknown';
   }

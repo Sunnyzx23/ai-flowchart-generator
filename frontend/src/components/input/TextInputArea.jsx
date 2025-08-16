@@ -34,7 +34,7 @@ const TextInputArea = ({ value, onChange, error }) => {
 
 建议提供越详细的描述，生成的流程图越准确..."
           className={cn(
-            'w-full h-40 p-4 border rounded-lg resize-none',
+            'w-full h-28 p-4 border rounded-lg resize-none',
             'placeholder:text-gray-400 placeholder:text-sm',
             'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
             'transition-colors duration-200',
@@ -102,20 +102,7 @@ const TextInputArea = ({ value, onChange, error }) => {
         )}
       </div>
 
-      {/* 写作建议 */}
-      {value.length === 0 && (
-        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">
-            💡 写作建议
-          </h4>
-          <ul className="text-xs text-gray-600 space-y-1">
-            <li>• 详细描述功能的使用场景和触发条件</li>
-            <li>• 说明用户操作步骤和系统响应</li>
-            <li>• 包含异常情况和错误处理要求</li>
-            <li>• 提及相关的权限和商业化逻辑</li>
-          </ul>
-        </div>
-      )}
+
     </div>
   );
 };

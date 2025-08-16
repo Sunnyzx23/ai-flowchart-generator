@@ -7,9 +7,12 @@ import FileUploadArea from './FileUploadArea';
 import ProductTypeSelector from './ProductTypeSelector';
 import ImplementTypeSelector from './ImplementTypeSelector';
 
-const RequirementInputForm = ({ data, onChange, onSubmit }) => {
+const RequirementInputForm = ({ data, onChange, onSubmit, isSubmitting: externalIsSubmitting }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  
+  // 使用外部传入的loading状态，如果有的话
+  const submitLoading = externalIsSubmitting !== undefined ? externalIsSubmitting : isSubmitting;
 
   // 验证表单数据
   const validateForm = () => {
@@ -51,19 +54,25 @@ const RequirementInputForm = ({ data, onChange, onSubmit }) => {
       return;
     }
 
-    setIsSubmitting(true);
+    // 如果没有外部loading状态管理，使用内部状态
+    if (externalIsSubmitting === undefined) {
+      setIsSubmitting(true);
+    }
+    
     try {
       await onSubmit(data);
     } catch (error) {
       console.error('提交失败:', error);
       setErrors({ submit: '提交失败，请重试' });
     } finally {
-      setIsSubmitting(false);
+      if (externalIsSubmitting === undefined) {
+        setIsSubmitting(false);
+      }
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {/* 输入方式切换 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-4">
@@ -157,10 +166,10 @@ const RequirementInputForm = ({ data, onChange, onSubmit }) => {
         </Button>
         <Button
           type="submit"
-          loading={isSubmitting}
-          disabled={isSubmitting}
+          loading={submitLoading}
+          disabled={submitLoading}
         >
-          {isSubmitting ? '生成中...' : '生成流程图'}
+          {submitLoading ? '生成中...' : '生成流程图'}
         </Button>
       </div>
 

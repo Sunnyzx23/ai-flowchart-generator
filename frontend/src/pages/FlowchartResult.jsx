@@ -3,6 +3,7 @@ import Layout from '../components/layout/Layout';
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui';
 import ExportPanel from '../components/export/ExportPanel';
 import DrawioGuide from '../components/export/DrawioGuide';
+import FlowchartCanvas from '../components/flowchart/FlowchartCanvas';
 import drawioService from '../services/drawioService';
 import clipboardService from '../services/clipboardService';
 
@@ -13,73 +14,36 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
 
   useEffect(() => {
     console.log('FlowchartResult - resultData:', resultData);
-    if (resultData?.data?.mermaidCode?.mermaidCode) {
-      const code = resultData.data.mermaidCode.mermaidCode;
+    
+    // resultData 直接就是 result 对象：{mermaidCode: "...", rawResponse: "...", validation: {...}}
+    if (resultData?.mermaidCode) {
+      const code = resultData.mermaidCode;
       console.log('FlowchartResult - 设置Mermaid代码:', code);
       setMermaidCode(code);
     } else {
-      console.log('FlowchartResult - 没有找到Mermaid代码');
+      console.log('FlowchartResult - 没有找到Mermaid代码, resultData结构:', JSON.stringify(resultData, null, 2));
     }
   }, [resultData]);
 
-  useEffect(() => {
-    if (mermaidCode) {
-      renderMermaid();
-    }
-  }, [mermaidCode]);
+  // 处理渲染完成
+  const handleRenderComplete = (svg) => {
+    console.log('Mermaid渲染成功');
+    setIsRendering(false);
+  };
 
-  const renderMermaid = async () => {
-    try {
-      setIsRendering(true);
-      console.log('开始渲染Mermaid:', mermaidCode);
-      
-      // 动态导入mermaid
-      const mermaid = await import('mermaid');
-      
-      // 配置mermaid
-      mermaid.default.initialize({
-        startOnLoad: false,
-        theme: 'default',
-        securityLevel: 'loose',
-        flowchart: {
-          useMaxWidth: true,
-          htmlLabels: true
-        }
-      });
-
-      // 清空之前的内容
-      const element = document.getElementById('mermaid-diagram');
-      if (element) {
-        element.innerHTML = '';
-        
-        // 渲染新的图表
-        const { svg } = await mermaid.default.render('flowchart-' + Date.now(), mermaidCode);
-        element.innerHTML = svg;
-        console.log('Mermaid渲染成功');
-      } else {
-        console.error('找不到mermaid-diagram元素');
-      }
-    } catch (error) {
-      console.error('Mermaid渲染失败:', error);
-      // 显示错误信息给用户
-      const element = document.getElementById('mermaid-diagram');
-      if (element) {
-        element.innerHTML = `
-          <div class="flex items-center justify-center h-64 text-center">
-            <div>
-              <p class="text-red-600 font-medium">流程图渲染失败</p>
-              <p class="text-gray-500 text-sm mt-2">请检查控制台查看详细错误信息</p>
-            </div>
-          </div>
-        `;
-      }
-    } finally {
-      setIsRendering(false);
-    }
+  // 处理渲染错误
+  const handleRenderError = (error) => {
+    console.error('Mermaid渲染失败:', error);
+    setIsRendering(false);
   };
 
   // 导出处理函数
-  const handleExportPNG = async (flowchartData, code) => {
+  const handleExportPNG = async (code) => {
+    const codeToUse = code || mermaidCode;
+    if (!codeToUse) {
+      alert('没有可导出的流程图代码');
+      return;
+    }
     try {
       const response = await fetch('http://localhost:3001/api/v1/export', {
         method: 'POST',
@@ -87,7 +51,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          mermaidCode: code,
+          mermaidCode: codeToUse,
           format: 'png',
           options: {
             width: 1200,
@@ -118,7 +82,12 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
     }
   };
 
-  const handleExportPDF = async (flowchartData, code) => {
+  const handleExportPDF = async (code) => {
+    const codeToUse = code || mermaidCode;
+    if (!codeToUse) {
+      alert('没有可导出的流程图代码');
+      return;
+    }
     try {
       const response = await fetch('http://localhost:3001/api/v1/export', {
         method: 'POST',
@@ -126,7 +95,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          mermaidCode: code,
+          mermaidCode: codeToUse,
           format: 'pdf',
           options: {
             width: 1200,
@@ -168,10 +137,16 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
     }
   };
 
-  const handleOpenDrawio = async (flowchartData, code) => {
+  const handleOpenDrawio = async (code) => {
     try {
       console.log('Draw.io跳转 - 尝试自动导入');
-      const result = await drawioService.openDrawioEditor(code || mermaidCode);
+      const codeToUse = code || mermaidCode;
+      
+      if (!codeToUse) {
+        throw new Error('没有可导出的流程图代码');
+      }
+      
+      const result = await drawioService.openDrawioEditor(codeToUse);
       if (!result.success) {
         throw new Error(result.message);
       }
@@ -212,7 +187,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
               流程图生成结果
             </h1>
             <p className="text-gray-600">
-              {resultData?.data?.mermaidCode?.rawResponse?.includes('降级方案') 
+              {resultData?.rawResponse?.includes('降级方案') 
                 ? '使用降级方案生成的基础流程图' 
                 : 'AI智能分析生成的业务流程图'}
             </p>
@@ -227,23 +202,16 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
           <CardHeader>
             <CardTitle>流程图预览</CardTitle>
             <CardDescription>
-              支持缩放查看，可导出多种格式
+              支持缩放、拖拽查看，可导出多种格式
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="relative">
-              {isRendering && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-50 rounded-lg">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    <p className="text-gray-600">正在渲染流程图...</p>
-                  </div>
-                </div>
-              )}
-              <div 
-                id="mermaid-diagram" 
-                className="w-full min-h-96 flex items-center justify-center bg-white border rounded-lg overflow-auto"
-                style={{ minHeight: '400px' }}
+          <CardContent className="p-0">
+            <div style={{ height: '600px' }}>
+              <FlowchartCanvas
+                mermaidCode={mermaidCode}
+                isLoading={isRendering}
+                onRenderComplete={handleRenderComplete}
+                onRenderError={handleRenderError}
               />
             </div>
           </CardContent>
@@ -251,7 +219,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
 
         {/* 导出操作面板 */}
         <ExportPanel
-          flowchartData={resultData?.data}
+          flowchartData={resultData}
           mermaidCode={mermaidCode}
           title="流程图导出"
           onExportPNG={handleExportPNG}
@@ -276,14 +244,14 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
         </Card>
 
         {/* AI分析信息 */}
-        {resultData?.data?.mermaidCode?.rawResponse && (
+        {resultData?.rawResponse && (
           <Card className="bg-blue-50 border-blue-200">
             <CardHeader>
               <CardTitle className="text-blue-800">AI分析说明</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-blue-700 text-sm">
-                {resultData.data.mermaidCode.rawResponse}
+                {resultData.rawResponse}
               </p>
             </CardContent>
           </Card>
