@@ -1,7 +1,4 @@
-// AI分析API - 使用专业提示词配置
-import promptSimple from '../backend/config/prompt-simple.json';
-import promptFull from '../backend/config/prompt.json';
-
+// AI分析API - 使用安全的配置读取方式
 export default async function handler(req, res) {
   // 标准CORS设置
   const corsHeaders = {
@@ -47,10 +44,42 @@ export default async function handler(req, res) {
       });
     }
 
-    // 选择提示词配置（优先使用简化版本以提高稳定性）
-    const promptConfig = promptSimple;
+    // 内嵌简化版提示词配置（避免import JSON文件问题）
+    const promptConfig = {
+      version: "2.1-simple",
+      description: "AI流程图生成工具 - 简化版本，解决网络连接问题",
+      systemRole: "你是专业的业务流程分析师。基于用户需求，生成实用的业务流程图。",
+      template: `【需求】：{requirement}
+【产品类型】：{productType}
+【实现方式】：{implementType}
+
+请生成具体的业务流程图，要求：
+1. 包含关键业务节点和决策点
+2. 体现用户实际操作路径
+3. 包含权限验证、付费节点等商业逻辑
+4. 使用标准Mermaid flowchart TD语法
+5. 节点命名要具体明确，使用中文描述
+6. 优化视觉效果：使用不同形状区分不同类型的节点
+
+节点形状规范：
+- 起始/结束：使用圆角矩形 [文本]
+- 操作步骤：使用矩形 [文本]
+- 决策判断：使用菱形 {文本}
+- 重要提示：使用圆形 ((文本))
+- 数据处理：使用梯形 [/文本/]
+
+直接输出Mermaid代码，格式如下：
+\`\`\`mermaid
+flowchart TD
+    A[开始] --> B[具体操作]
+    B --> C{决策点}
+    C -->|是| D[处理结果]
+    C -->|否| E[替代方案]
+    D --> F((完成))
+\`\`\``
+    };
     
-    console.log(`使用提示词配置: ${promptConfig.version} - ${promptConfig.description}`);
+    console.log(`使用内嵌提示词配置: ${promptConfig.version} - ${promptConfig.description}`);
     console.log('开始AI分析，需求:', requirements.substring(0, 100) + '...');
 
     // 使用配置文件中的专业提示词
@@ -111,19 +140,19 @@ export default async function handler(req, res) {
     let mermaidCode = apiData.choices[0].message.content.trim();
     const fullResponse = mermaidCode;
     
-    // 清理和提取Mermaid代码（根据配置文件的输出要求）
+    // 清理和提取Mermaid代码
     mermaidCode = mermaidCode
       .replace(/```mermaid\n?/g, '')
       .replace(/```\n?/g, '')
       .replace(/^mermaid\n?/g, '')
       .trim();
 
-    // 确保代码符合配置文件中的输出要求
+    // 确保代码符合配置要求
     if (!mermaidCode.toLowerCase().includes('flowchart')) {
       mermaidCode = `flowchart TD\n${mermaidCode}`;
     }
 
-    // 根据配置文件进行基本验证
+    // 基本验证
     if (!mermaidCode.includes('-->') && !mermaidCode.includes('---')) {
       console.warn('生成的流程图可能不符合Mermaid语法标准');
     }
@@ -162,7 +191,7 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     });
 
-    // 分类错误处理
+    // 分类错误处理（基于BUG-FIXES-SUMMARY.md经验）
     if (error.message.includes('DeepSeek API')) {
       return res.status(503).json({
         success: false,
