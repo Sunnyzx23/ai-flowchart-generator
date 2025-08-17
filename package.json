@@ -2,7 +2,6 @@
   "name": "ai-flowchart-generator",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "build": "cd frontend && npm run build",
     "dev": "cd frontend && npm run dev"
