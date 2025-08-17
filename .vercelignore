@@ -1,4 +1,10 @@
-backend/
+backend/src/
+backend/node_modules/
+backend/server*.js
+backend/test*.js
+backend/temp/
+backend/uploads/
+backend/*.log
 issues/
 test-*.html
 *.log

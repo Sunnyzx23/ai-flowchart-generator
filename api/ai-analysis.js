@@ -1,6 +1,6 @@
 // AI分析API - 使用专业提示词配置
-import promptSimple from './config/prompt-simple.json';
-import promptFull from './config/prompt.json';
+import promptSimple from '../backend/config/prompt-simple.json';
+import promptFull from '../backend/config/prompt.json';
 
 export default async function handler(req, res) {
   // 标准CORS设置
