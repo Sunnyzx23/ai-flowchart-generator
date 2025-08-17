@@ -5,16 +5,12 @@
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "frontend/dist"
+        "distDir": "dist"
       }
     },
     {
       "src": "api/index.js",
-      "use": "@vercel/node",
-      "config": {
-        "runtime": "nodejs18.x",
-        "maxDuration": 30
-      }
+      "use": "@vercel/node"
     }
   ],
   "routes": [
