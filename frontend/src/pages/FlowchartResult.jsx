@@ -55,7 +55,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
       return;
     }
     try {
-      const response = await fetch('getApiUrl('/api/export')', {
+      const response = await fetch(getApiUrl('/api/export'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
       const result = await response.json();
       if (result.success) {
         // 触发下载
-        const downloadUrl = `getApiUrl('')${result.data.downloadUrl}`;
+        const downloadUrl = `${getApiUrl('')}${result.data.downloadUrl}`;
         const link = document.createElement('a');
         link.href = downloadUrl;
         link.download = result.data.fileName;
@@ -99,7 +99,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
       return;
     }
     try {
-      const response = await fetch('getApiUrl('/api/export')', {
+      const response = await fetch(getApiUrl('/api/export'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +121,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
       const result = await response.json();
       if (result.success) {
         // 触发下载
-        const downloadUrl = `getApiUrl('')${result.data.downloadUrl}`;
+        const downloadUrl = `${getApiUrl('')}${result.data.downloadUrl}`;
         const link = document.createElement('a');
         link.href = downloadUrl;
         link.download = result.data.fileName;
