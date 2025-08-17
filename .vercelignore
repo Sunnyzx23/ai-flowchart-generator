@@ -1,0 +1,8 @@
+backend/
+issues/
+test-*.html
+*.log
+.DS_Store
+node_modules/
+*.md
+!README.md
