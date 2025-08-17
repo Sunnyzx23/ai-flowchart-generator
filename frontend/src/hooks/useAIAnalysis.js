@@ -208,6 +208,14 @@ export const useAIAnalysis = (existingSessionId = null) => {
         estimatedTime: 30000 // 预计30秒
       }));
 
+      // 更新状态为处理中，确保用户能看到loading
+      setAnalysisState(prev => ({
+        ...prev,
+        status: 'processing',
+        progress: 10,
+        message: '正在连接AI服务...'
+      }));
+
       // 调用后端API创建分析会话
       const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AI_ANALYSIS), {
         method: 'POST',
@@ -218,7 +226,13 @@ export const useAIAnalysis = (existingSessionId = null) => {
       });
 
       if (!response.ok) {
-        throw new Error(`分析请求失败: ${response.status}`);
+        const errorText = await response.text();
+        console.error('API响应错误:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`分析请求失败: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();

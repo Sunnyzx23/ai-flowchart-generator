@@ -40,7 +40,7 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
     try {
       // 启动AI分析，用户停留在当前页面看loading
       await startAnalysis({
-        requirement: data.content,
+        requirements: data.content,  // 🔧 修复字段名：requirement -> requirements
         productType: data.productType,
         implementType: data.implementType,
         inputMethod: data.inputMethod
@@ -79,7 +79,7 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
   // 重试处理
   const handleRetry = () => {
     retryAnalysis({
-      requirement: inputData.content,
+      requirements: inputData.content,  // 🔧 修复字段名：requirement -> requirements
       productType: inputData.productType,
       implementType: inputData.implementType,
       inputMethod: inputData.inputMethod
