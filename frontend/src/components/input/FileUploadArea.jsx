@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { cn } from '../../utils/cn';
 import { getApiUrl } from '../../config/api.js';
+import API_CONFIG from '../../config/api.js';
 
 const FileUploadArea = ({ onFileContent, error }) => {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -41,7 +42,7 @@ const FileUploadArea = ({ onFileContent, error }) => {
       formData.append('implementType', 'ai'); // 临时值，实际会从表单获取
 
       // 调用后端API
-      const response = await fetch(getApiUrl('/api/upload/file'), {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.UPLOAD_FILE), {
         method: 'POST',
         body: formData,
       });

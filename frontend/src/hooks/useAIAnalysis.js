@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getApiUrl } from '../config/api.js';
+import API_CONFIG from '../config/api.js';
 
 /**
  * AI分析状态管理Hook
@@ -107,7 +108,7 @@ export const useAIAnalysis = (existingSessionId = null) => {
   const startStatusPolling = useCallback((sessionId) => {
     const pollStatus = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/v1/analysis/${sessionId}`);
+        const response = await fetch(getApiUrl(`/api/analysis/${sessionId}`));
         if (!response.ok) {
           throw new Error('状态查询失败');
         }
@@ -208,7 +209,7 @@ export const useAIAnalysis = (existingSessionId = null) => {
       }));
 
       // 调用后端API创建分析会话
-      const response = await fetch(getApiUrl('/api/ai-analysis'), {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AI_ANALYSIS), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -279,7 +280,7 @@ export const useAIAnalysis = (existingSessionId = null) => {
   const cancelAnalysis = useCallback(async () => {
     if (analysisState.sessionId) {
       try {
-        await fetch(`http://localhost:3001/api/v1/analysis/${analysisState.sessionId}`, {
+        await fetch(getApiUrl(`/api/analysis/${analysisState.sessionId}`), {
           method: 'DELETE'
         });
       } catch (error) {
