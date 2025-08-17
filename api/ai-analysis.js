@@ -24,15 +24,23 @@ export default function handler(req, res) {
     });
   }
   
-  // 简单响应，确认API工作
+  // 返回前端期望的数据结构（模拟数据）
+  const mockMermaidCode = `flowchart TD
+    A[开始] --> B[用户输入需求]
+    B --> C[AI分析需求]
+    C --> D[生成流程图]
+    D --> E[显示结果]
+    E --> F[结束]`;
+
   return res.status(200).json({
     success: true,
-    message: 'AI Analysis API is working!',
-    method: req.method,
-    timestamp: new Date().toISOString(),
-    body: req.body,
-    data: {
-      note: '这是简化版本，用于测试API基本功能'
+    mermaidCode: mockMermaidCode,
+    fullResponse: `这是AI分析的完整响应。生成的Mermaid代码如下：\n\n${mockMermaidCode}`,
+    debug: {
+      message: 'API测试版本 - 使用模拟数据',
+      method: req.method,
+      timestamp: new Date().toISOString(),
+      body: req.body
     }
   });
 }
