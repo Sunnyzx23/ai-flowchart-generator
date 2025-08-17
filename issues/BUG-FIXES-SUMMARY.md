@@ -12,12 +12,12 @@
 
 | 分类 | 数量 | 占比 |
 |------|------|------|
-| 后端服务器问题 | 3个 | 33.3% |
-| 前端数据处理 | 2个 | 22.2% |
-| React组件问题 | 2个 | 22.2% |
-| 开发环境配置 | 1个 | 11.1% |
-| 网络通信问题 | 1个 | 11.1% |
-| **总计** | **9个** | **100%** |
+| Vercel部署问题 | 6个 | 40.0% |
+| 后端服务器问题 | 3个 | 20.0% |
+| 前端数据处理 | 2个 | 13.3% |
+| React组件问题 | 2个 | 13.3% |
+| 网络通信问题 | 2个 | 13.3% |
+| **总计** | **15个** | **100%** |
 
 ---
 
@@ -371,6 +371,186 @@ const response = await axios.post(url, payload, {
 // 使用prompt-simple.json代替复杂的prompt.json
 // 字符数从3157减少到579
 ```
+
+### 6. Vercel部署问题
+
+#### 6.1 Vercel配置语法冲突
+**🚨 问题描述**
+```
+Error: The 'functions' property cannot be used in conjunction with the 'builds' property. Please remove one of them.
+```
+
+**🔍 根本原因**
+- 在vercel.json中同时使用了`functions`和`builds`属性
+- Vercel新版本配置语法变更，两者不能共存
+
+**✅ 解决方案**
+```json
+// ❌ 错误配置
+{
+  "builds": [...],
+  "functions": {...}
+}
+
+// ✅ 正确配置
+{
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "cd frontend && npm install"
+}
+```
+
+#### 6.2 Root Directory配置错误导致API 404
+**🚨 问题描述**
+```json
+{"error": "NOT_FOUND", "code": "NOT_FOUND"}
+```
+
+**🔍 根本原因**
+- Root Directory设置为`frontend`时，Vercel只能看到frontend目录
+- 根目录下的`api/`文件夹被忽略，导致Serverless Functions无法部署
+
+**✅ 解决方案**
+```
+Root Directory: 留空 (使用整个仓库)
+Build Command: cd frontend && npm run build
+Output Directory: frontend/dist
+Install Command: cd frontend && npm install
+```
+
+#### 6.3 ES模块与CommonJS格式冲突
+**🚨 问题描述**
+```
+ReferenceError: module is not defined in ES module scope
+This file is being treated as an ES module because it has a '.js' file extension and '/var/task/api/package.json' contains "type": "module"
+```
+
+**🔍 根本原因**
+- Vercel Functions环境默认使用ES模块
+- 使用`module.exports`的CommonJS语法在ES模块环境中不被支持
+
+**✅ 解决方案**
+```javascript
+// ❌ CommonJS格式（不工作）
+module.exports = (req, res) => {
+  // ...
+};
+
+// ✅ ES模块格式（正确）
+export default function handler(req, res) {
+  // ...
+}
+```
+
+#### 6.4 Function Runtime配置错误
+**🚨 问题描述**
+```
+Error: Function Runtimes must have a valid version, for example 'now-php@1.0.0'.
+```
+
+**🔍 根本原因**
+- 在vercel.json中使用了无效的runtime格式`"runtime": "nodejs20.x"`
+- Vercel的runtime配置语法要求特定格式
+
+**✅ 解决方案**
+```json
+// ❌ 错误配置
+{
+  "functions": {
+    "api/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
+
+// ✅ 正确配置（让Vercel自动检测）
+{
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist"
+}
+```
+
+#### 6.5 构建依赖配置错误
+**🚨 问题描述**
+```
+sh: line 1: vite: command not found
+Error: Command "npm run build" exited with 127
+```
+
+**🔍 根本原因**
+- 构建工具(vite等)放在`devDependencies`中
+- Vercel生产环境不安装`devDependencies`
+
+**✅ 解决方案**
+```json
+// 将构建依赖移至dependencies
+{
+  "dependencies": {
+    "vite": "^4.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "tailwindcss": "^3.0.0",
+    "postcss": "^8.0.0",
+    "autoprefixer": "^10.0.0"
+  }
+}
+```
+
+#### 6.6 API方法处理错误
+**🚨 问题描述**
+```json
+{"error": "Method not allowed"}
+```
+
+**🔍 根本原因**
+- API函数中HTTP方法验证逻辑错误
+- 缺少正确的OPTIONS预检请求处理
+- 前端发送的请求方法与API期望不匹配
+
+**✅ 解决方案**
+```javascript
+export default async function handler(req, res) {
+  // 设置CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // 处理OPTIONS预检请求
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  // 验证HTTP方法
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // 处理POST请求
+  // ...
+}
+```
+
+**🛡️ Vercel部署最佳实践**
+
+1. **项目结构规范**
+   - `api/` 目录用于Serverless Functions
+   - 前端代码可以在单独目录（如`frontend/`）
+   - 使用`.vercelignore`忽略不需要的文件
+
+2. **配置文件规范**
+   - 优先使用简单的vercel.json配置
+   - 避免复杂的functions和builds配置
+   - 让Vercel自动检测runtime和依赖
+
+3. **代码规范**
+   - API函数使用ES模块格式：`export default function handler`
+   - 正确处理CORS和HTTP方法
+   - 构建依赖放在`dependencies`而非`devDependencies`
+
+4. **调试策略**
+   - 先确保简单API（如hello）工作
+   - 逐步增加复杂功能
+   - 使用Vercel控制台查看详细错误日志
+   - 避免反复修改，每次改动都要有明确目的
 
 ---
 
