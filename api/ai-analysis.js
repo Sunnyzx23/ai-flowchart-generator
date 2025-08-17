@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 export default async function handler(req, res) {
   // 设置CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -24,9 +22,13 @@ export default async function handler(req, res) {
     }
 
     // 调用DeepSeek API
-    const response = await axios.post(
-      process.env.DEEPSEEK_BASE_URL + '/chat/completions',
-      {
+    const response = await fetch(process.env.DEEPSEEK_BASE_URL + '/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
         model: process.env.DEFAULT_MODEL || 'deepseek-chat',
         messages: [
           {
@@ -58,16 +60,15 @@ flowchart TD
         ],
         temperature: 0.7,
         max_tokens: 2000
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+      })
+    });
 
-    const aiResponse = response.data.choices[0].message.content;
+    if (!response.ok) {
+      throw new Error(`DeepSeek API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const aiResponse = data.choices[0].message.content;
     
     // 提取Mermaid代码
     const mermaidMatch = aiResponse.match(/```mermaid\n([\s\S]*?)\n```/);
