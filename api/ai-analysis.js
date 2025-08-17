@@ -1,3 +1,4 @@
+// AI分析API - 使用标准Vercel Functions格式
 export default async function handler(req, res) {
   // 设置CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -6,8 +7,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
@@ -21,8 +21,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: '需求描述不能为空' });
     }
 
+    // 检查环境变量
+    if (!process.env.DEEPSEEK_API_KEY || !process.env.DEEPSEEK_BASE_URL) {
+      return res.status(500).json({ 
+        error: '服务器配置错误',
+        details: 'Missing API configuration'
+      });
+    }
+
     // 调用DeepSeek API
-    const response = await fetch(process.env.DEEPSEEK_BASE_URL + '/chat/completions', {
+    const apiResponse = await fetch(process.env.DEEPSEEK_BASE_URL + '/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
@@ -63,18 +71,24 @@ flowchart TD
       })
     });
 
-    if (!response.ok) {
-      throw new Error(`DeepSeek API error: ${response.status}`);
+    if (!apiResponse.ok) {
+      const errorText = await apiResponse.text();
+      throw new Error(`DeepSeek API error: ${apiResponse.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = await apiResponse.json();
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid API response format');
+    }
+    
     const aiResponse = data.choices[0].message.content;
     
     // 提取Mermaid代码
     const mermaidMatch = aiResponse.match(/```mermaid\n([\s\S]*?)\n```/);
     const mermaidCode = mermaidMatch ? mermaidMatch[1] : aiResponse;
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       mermaidCode: mermaidCode.trim(),
       fullResponse: aiResponse
@@ -82,7 +96,7 @@ flowchart TD
 
   } catch (error) {
     console.error('AI Analysis Error:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'AI分析失败',
       details: error.message 
     });
