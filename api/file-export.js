@@ -16,10 +16,34 @@ export default function handler(req, res) {
   }
 
   try {
-    const { mermaidCode, format, options } = req.body;
+    // 【6.8节】正确解析请求体 - 解决400 Bad Request
+    let requestBody;
+    try {
+      requestBody = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } catch (parseError) {
+      console.error('请求体解析失败:', parseError);
+      return res.status(400).json({
+        success: false,
+        error: '请求数据格式错误，请检查JSON格式',
+        details: process.env.NODE_ENV === 'development' ? parseError.message : undefined
+      });
+    }
 
-    if (!mermaidCode) {
-      return res.status(400).json({ error: 'Mermaid代码不能为空' });
+    if (!requestBody) {
+      return res.status(400).json({
+        success: false,
+        error: '请求体不能为空'
+      });
+    }
+
+    const { mermaidCode, format = 'png', options = {} } = requestBody;
+
+    if (!mermaidCode || typeof mermaidCode !== 'string' || mermaidCode.trim().length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Mermaid代码不能为空',
+        received: typeof mermaidCode
+      });
     }
 
     // 目前暂时返回错误，因为在Vercel环境中生成图片比较复杂

@@ -12,12 +12,12 @@
 
 | 分类 | 数量 | 占比 |
 |------|------|------|
-| Vercel部署问题 | 6个 | 40.0% |
-| 后端服务器问题 | 3个 | 20.0% |
-| 前端数据处理 | 2个 | 13.3% |
-| React组件问题 | 2个 | 13.3% |
-| 网络通信问题 | 2个 | 13.3% |
-| **总计** | **15个** | **100%** |
+| Vercel部署问题 | 8个 | 47.1% |
+| 后端服务器问题 | 3个 | 17.6% |
+| 前端数据处理 | 2个 | 11.8% |
+| React组件问题 | 2个 | 11.8% |
+| 网络通信问题 | 2个 | 11.8% |
+| **总计** | **17个** | **100%** |
 
 ---
 
@@ -526,6 +526,70 @@ export default async function handler(req, res) {
 
   // 处理POST请求
   // ...
+}
+```
+
+#### 6.7 ES模块import JSON文件错误
+**🚨 问题描述**
+```
+500 Internal Server Error
+```
+
+**🔍 根本原因**
+- 在Vercel Functions中使用`import promptConfig from '../backend/config/prompt.json'`
+- Vercel Functions不支持直接import JSON文件，特别是跨目录的相对路径
+- 与6.3节的ES模块问题类似，但具体原因是JSON文件导入
+
+**✅ 解决方案**
+```javascript
+// ❌ 错误方式（导致500错误）
+import promptSimple from '../backend/config/prompt-simple.json';
+import promptFull from '../backend/config/prompt.json';
+
+// ✅ 正确方式（内嵌配置）
+const promptConfig = {
+  version: "2.1-simple",
+  description: "AI流程图生成工具 - 简化版本",
+  systemRole: "你是专业的业务流程分析师...",
+  template: "【需求】：{requirement}..."
+};
+```
+
+#### 6.8 请求体解析错误导致400错误
+**🚨 问题描述**
+```
+400 Bad Request
+```
+
+**🔍 根本原因**
+- Vercel Functions中`req.body`可能是字符串格式
+- 直接使用`req.body`解构可能失败
+- 缺少请求体解析和验证逻辑
+
+**✅ 解决方案**
+```javascript
+export default async function handler(req, res) {
+  // 正确解析请求体
+  let requestBody;
+  try {
+    requestBody = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error: '请求数据格式错误'
+    });
+  }
+
+  // 验证必需字段
+  const { requirements, productType, implementType } = requestBody || {};
+  if (!requirements || typeof requirements !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: '需求描述不能为空'
+    });
+  }
+
+  // 继续处理...
 }
 ```
 

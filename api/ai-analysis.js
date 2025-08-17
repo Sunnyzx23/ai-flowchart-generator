@@ -23,12 +23,43 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { requirements, productType = '通用', implementType = '通用' } = req.body || {};
+    // 【6.8节】正确解析请求体 - 解决400 Bad Request
+    let requestBody;
+    try {
+      requestBody = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } catch (parseError) {
+      console.error('请求体解析失败:', parseError);
+      return res.status(400).json({
+        success: false,
+        error: '请求数据格式错误，请检查JSON格式',
+        details: process.env.NODE_ENV === 'development' ? parseError.message : undefined
+      });
+    }
 
+    // 验证请求体存在
+    if (!requestBody) {
+      return res.status(400).json({
+        success: false,
+        error: '请求体不能为空'
+      });
+    }
+
+    const { requirements, productType = '通用', implementType = '通用' } = requestBody;
+
+    // 【6.8节】完善字段验证
     if (!requirements || typeof requirements !== 'string' || requirements.trim().length === 0) {
       return res.status(400).json({
         success: false,
-        error: '需求描述不能为空'
+        error: '需求描述不能为空',
+        received: typeof requirements
+      });
+    }
+
+    if (requirements.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        error: '需求描述至少需要10个字符',
+        current: requirements.trim().length
       });
     }
 
