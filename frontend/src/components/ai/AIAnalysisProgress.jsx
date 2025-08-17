@@ -16,37 +16,37 @@ const AIAnalysisProgress = ({
   showStats = true,
   compact = false
 }) => {
-  // 分析步骤配置
+  // 分析步骤配置 - 与后端状态保持一致
   const analysisSteps = [
     { 
-      key: 'preparing', 
-      label: '准备分析', 
-      icon: '🔍', 
-      description: '初始化分析环境' 
+      key: 'pending', 
+      label: '提交请求', 
+      icon: '📤', 
+      description: '正在提交分析请求' 
+    },
+    { 
+      key: 'processing', 
+      label: '智能分析', 
+      icon: '🧠', 
+      description: 'AI正在深度分析您的需求' 
     },
     { 
       key: 'analyzing', 
-      label: '需求分析', 
-      icon: '🧠', 
-      description: '7维度智能分析' 
+      label: '结构化处理', 
+      icon: '🔍', 
+      description: '提取关键业务节点' 
     },
     { 
       key: 'generating', 
       label: '生成流程图', 
       icon: '⚡', 
-      description: '创建Mermaid代码' 
+      description: '创建专业的Mermaid流程图' 
     },
     { 
-      key: 'optimizing', 
-      label: '优化完善', 
-      icon: '✨', 
-      description: '格式化和优化' 
-    },
-    { 
-      key: 'completing', 
+      key: 'validating', 
       label: '质量检查', 
       icon: '✅', 
-      description: '最终验证' 
+      description: '验证和优化流程图' 
     }
   ];
 
@@ -201,11 +201,14 @@ const AIAnalysisProgress = ({
         </div>
         
         {/* 进度条 */}
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
           <div 
-            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300 ease-out"
+            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500 ease-out relative"
             style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-          />
+          >
+            {/* 添加闪光效果 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse" />
+          </div>
         </div>
       </div>
 
@@ -216,8 +219,10 @@ const AIAnalysisProgress = ({
             <span>已用时: {formatTime(analysisTime)}</span>
             <span>•</span>
             <span>
-              {progress < 50 ? '预计还需 20-40 秒' : 
-               progress < 80 ? '预计还需 10-20 秒' : 
+              {progress < 20 ? '预计还需 25-35 秒' : 
+               progress < 45 ? '预计还需 15-25 秒' : 
+               progress < 70 ? '预计还需 8-15 秒' : 
+               progress < 90 ? '预计还需 3-8 秒' : 
                '即将完成'}
             </span>
           </div>

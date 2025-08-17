@@ -19,21 +19,44 @@ export const useAIAnalysis = (existingSessionId = null) => {
   const progressTimerRef = useRef(null);
   const statusCheckTimerRef = useRef(null);
 
-  // 辅助函数
-  const getProgressFromStatus = useCallback((status) => {
-    const statusMap = {
-      'idle': 0,
-      'pending': 10,
-      'processing': 30,
-      'analyzing': 50,
-      'generating': 70,
-      'validating': 85,
-      'completed': 100,
-      'failed': 0,
-      'error': 0
+  // 辅助函数 - 获取状态对应的进度范围
+  const getProgressRange = useCallback((status) => {
+    const statusRanges = {
+      'idle': [0, 5],
+      'pending': [5, 15],
+      'processing': [15, 45], // 扩大processing的进度范围
+      'analyzing': [45, 65],
+      'generating': [65, 85],
+      'validating': [85, 95],
+      'completed': [100, 100],
+      'failed': [0, 0],
+      'error': [0, 0]
     };
-    return statusMap[status] || 0;
+    return statusRanges[status] || [0, 0];
   }, []);
+
+  // 平滑进度计算
+  const calculateSmoothProgress = useCallback((status, elapsedTime) => {
+    const [minProgress, maxProgress] = getProgressRange(status);
+    
+    if (status === 'completed') return 100;
+    if (status === 'failed' || status === 'error') return 0;
+    
+    // 基于时间的平滑进度增长
+    const statusDurations = {
+      'idle': 2000,
+      'pending': 3000,
+      'processing': 25000, // processing阶段预计25秒
+      'analyzing': 8000,
+      'generating': 10000,
+      'validating': 5000
+    };
+    
+    const expectedDuration = statusDurations[status] || 10000;
+    const progressInStatus = Math.min(elapsedTime / expectedDuration, 0.9); // 最多到90%，留点余量
+    
+    return Math.floor(minProgress + (maxProgress - minProgress) * progressInStatus);
+  }, [getProgressRange]);
 
   const getStatusMessage = useCallback((status) => {
     const messageMap = {
@@ -50,6 +73,35 @@ export const useAIAnalysis = (existingSessionId = null) => {
     return messageMap[status] || '处理中...';
   }, []);
 
+  // 开始平滑进度更新
+  const startSmoothProgress = useCallback(() => {
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+    }
+
+    progressTimerRef.current = setInterval(() => {
+      setAnalysisState(prev => {
+        if (prev.status === 'completed' || prev.status === 'failed' || prev.status === 'error') {
+          return prev;
+        }
+
+        const now = Date.now();
+        const elapsedTime = now - (prev.statusStartTime || prev.startTime || now);
+        const newProgress = calculateSmoothProgress(prev.status, elapsedTime);
+        
+        // 只有进度真的变化了才更新
+        if (newProgress !== prev.progress) {
+          return {
+            ...prev,
+            progress: newProgress
+          };
+        }
+        
+        return prev;
+      });
+    }, 500); // 每500ms更新一次进度
+  }, [calculateSmoothProgress]);
+
   // 状态轮询
   const startStatusPolling = useCallback((sessionId) => {
     const pollStatus = async () => {
@@ -63,12 +115,18 @@ export const useAIAnalysis = (existingSessionId = null) => {
         if (data.success && data.data) {
           const sessionData = data.data;
           
-          setAnalysisState(prev => ({
-            ...prev,
-            status: sessionData.status,
-            progress: getProgressFromStatus(sessionData.status),
-            message: getStatusMessage(sessionData.status)
-          }));
+          setAnalysisState(prev => {
+            const now = Date.now();
+            const statusChanged = prev.status !== sessionData.status;
+            
+            return {
+              ...prev,
+              status: sessionData.status,
+              message: getStatusMessage(sessionData.status),
+              // 如果状态改变了，重置该状态的开始时间
+              statusStartTime: statusChanged ? now : (prev.statusStartTime || now)
+            };
+          });
 
           // 如果完成，设置结果并停止轮询
           if (sessionData.status === 'completed' && sessionData.result) {
@@ -80,9 +138,14 @@ export const useAIAnalysis = (existingSessionId = null) => {
               progress: 100
             }));
             
+            // 清理所有定时器
             if (statusCheckTimerRef.current) {
               clearInterval(statusCheckTimerRef.current);
               statusCheckTimerRef.current = null;
+            }
+            if (progressTimerRef.current) {
+              clearInterval(progressTimerRef.current);
+              progressTimerRef.current = null;
             }
           }
         }
@@ -99,7 +162,10 @@ export const useAIAnalysis = (existingSessionId = null) => {
       clearInterval(statusCheckTimerRef.current);
     }
     statusCheckTimerRef.current = setInterval(pollStatus, 2000);
-  }, [getProgressFromStatus, getStatusMessage]);
+    
+    // 同时启动平滑进度更新
+    startSmoothProgress();
+  }, [getStatusMessage, startSmoothProgress]);
 
   // 如果传入了existingSessionId，直接查询该会话
   useEffect(() => {
@@ -127,15 +193,17 @@ export const useAIAnalysis = (existingSessionId = null) => {
   // 开始AI分析
   const startAnalysis = useCallback(async (analysisData) => {
     try {
+      const now = Date.now();
       setAnalysisState(prev => ({
         ...prev,
-        status: 'preparing',
+        status: 'pending',
         progress: 0,
-        message: '',
+        message: '正在提交请求...',
         error: null,
         result: null,
-        startTime: Date.now(),
-        estimatedTime: 20000 // 预计20秒
+        startTime: now,
+        statusStartTime: now,
+        estimatedTime: 30000 // 预计30秒
       }));
 
       // 调用后端API创建分析会话

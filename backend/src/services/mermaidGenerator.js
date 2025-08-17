@@ -225,9 +225,12 @@ class MermaidGenerator {
         result.errors.push('代码必须以flowchart开头');
       }
 
-      // 检查节点定义
-      const nodePattern = /^\s*[A-Za-z0-9_]+[\[\(\{][^\[\]\(\)\{\}]*[\]\)\}]/;
-      const linkPattern = /^\s*[A-Za-z0-9_]+\s*[-\.]*>\s*[A-Za-z0-9_]+/;
+      // 更严格的节点和连接模式
+      const nodePattern = /^\s*[A-Za-z0-9_]+[\[\(\{].*?[\]\)\}]/;
+      const linkPattern = /^\s*[A-Za-z0-9_]+\s*[-\.=]*>\s*[A-Za-z0-9_]+/;
+      const stylePattern = /^\s*style\s+[A-Za-z0-9_]+\s+.+/;
+      const commentPattern = /^\s*%%/;
+      const flowchartPattern = /^\s*flowchart\s+(TD|TB|BT|RL|LR)/;
       
       const lines = code.split('\n');
       let hasNodes = false;
@@ -235,25 +238,47 @@ class MermaidGenerator {
 
       lines.forEach((line, index) => {
         const trimmedLine = line.trim();
-        if (trimmedLine === '' || trimmedLine.startsWith('%%')) return;
-        if (trimmedLine.startsWith('flowchart')) return;
-        if (trimmedLine.startsWith('style')) return;
+        if (trimmedLine === '') return; // 空行忽略
+        
+        // 检查各种有效模式
+        if (commentPattern.test(trimmedLine)) return; // 注释
+        if (flowchartPattern.test(trimmedLine)) return; // flowchart声明
+        if (stylePattern.test(trimmedLine)) return; // 样式定义
 
         // 检查节点定义
         if (nodePattern.test(trimmedLine)) {
           hasNodes = true;
+          
+          // 检查节点文本是否包含问题字符
+          const nodeMatch = trimmedLine.match(/[\[\(\{]([^[\]\(\)\{\}]*?)[\]\)\}]/);
+          if (nodeMatch && nodeMatch[1]) {
+            const nodeText = nodeMatch[1];
+            // 检查未转义的特殊字符
+            if (/[[\]{}()]/.test(nodeText) && !nodeText.startsWith('"') && !nodeText.endsWith('"')) {
+              result.warnings.push(`第${index + 1}行节点文本可能需要引号包围: ${trimmedLine}`);
+            }
+          }
           return;
         }
 
         // 检查连接线定义
         if (linkPattern.test(trimmedLine)) {
           hasLinks = true;
+          
+          // 检查连接线标签
+          const labelMatch = trimmedLine.match(/\|([^|]*?)\|/);
+          if (labelMatch && labelMatch[1]) {
+            const labelText = labelMatch[1];
+            if (/[[\]{}()]/.test(labelText)) {
+              result.warnings.push(`第${index + 1}行连接标签可能包含问题字符: ${trimmedLine}`);
+            }
+          }
           return;
         }
 
         // 如果不匹配任何模式，记录警告
         if (trimmedLine.length > 0) {
-          result.warnings.push(`第${index + 1}行可能存在语法问题: ${trimmedLine}`);
+          result.warnings.push(`第${index + 1}行语法不明确: ${trimmedLine}`);
         }
       });
 
@@ -346,7 +371,18 @@ class MermaidGenerator {
   fixSpecialCharacters(code) {
     let fixedCode = code;
 
-    // 修复节点文本中的特殊字符
+    // 首先处理整体的问题字符
+    fixedCode = fixedCode
+      .replace(/[\u201c\u201d]/g, '"') // 替换中文引号为英文引号
+      .replace(/[\u2018\u2019]/g, "'") // 替换中文单引号为英文单引号
+      .replace(/[\u3001\u3002]/g, ',') // 替换中文标点
+      .replace(/[\uff08\uff09]/g, match => match === '\uff08' ? '(' : ')') // 替换全角括号
+      .replace(/[\uff1a]/g, ':') // 替换全角冒号
+      .replace(/[\uff1f]/g, '?') // 替换全角问号
+      .replace(/[\uff01]/g, '!') // 替换全角感叹号
+      .replace(/[\u2014\u2013]/g, '-'); // 替换长短横线
+
+    // 修复节点文本中的特殊字符 - 更严格的处理
     fixedCode = fixedCode.replace(/([A-Za-z0-9_]+)(\[|\(|\{)([^\[\]\(\)\{\}]*?)(\]|\)|\})/g, (match, nodeId, openBracket, text, closeBracket) => {
       // 清理节点文本
       let cleanText = text
@@ -357,17 +393,23 @@ class MermaidGenerator {
         .replace(/[{}]/g, '') // 移除花括号
         .replace(/\|/g, '') // 移除竖线
         .replace(/\n/g, ' ') // 换行符转空格
+        .replace(/\r/g, '') // 移除回车符
+        .replace(/\t/g, ' ') // 制表符转空格
         .replace(/\s+/g, ' ') // 多个空格合并为一个
         .trim();
 
-      // 如果文本包含特殊字符，用双引号包围
-      if (cleanText.includes('(') || cleanText.includes(')') || 
-          cleanText.includes('[') || cleanText.includes(']') ||
-          cleanText.includes('{') || cleanText.includes('}') ||
-          cleanText.includes('|') || cleanText.includes('?') ||
-          cleanText.includes('!') || cleanText.includes(':') ||
-          cleanText.includes(';') || cleanText.includes(',')) {
-        cleanText = `"${cleanText}"`;
+      // 如果文本为空，使用默认文本
+      if (!cleanText) {
+        cleanText = '步骤';
+      }
+
+      // 检查是否需要引号包围 - 更全面的检查
+      const needsQuotes = /[()[\]{}|?!:;,\-\+\*\/\\=<>&%$#@~`]/.test(cleanText) || 
+                         /\s/.test(cleanText) || // 包含空格
+                         /^\d/.test(cleanText); // 以数字开头
+
+      if (needsQuotes) {
+        cleanText = `"${cleanText.replace(/"/g, '\\"')}"`;
       }
 
       return `${nodeId}${openBracket}${cleanText}${closeBracket}`;
@@ -382,8 +424,15 @@ class MermaidGenerator {
         .replace(/[\[\]]/g, '') // 移除方括号
         .replace(/[{}]/g, '') // 移除花括号
         .replace(/\n/g, ' ') // 换行符转空格
+        .replace(/\r/g, '') // 移除回车符
+        .replace(/\t/g, ' ') // 制表符转空格
         .replace(/\s+/g, ' ') // 多个空格合并为一个
         .trim();
+
+      // 如果标签为空，移除整个标签
+      if (!cleanLabel) {
+        return '';
+      }
 
       return `|${cleanLabel}|`;
     });
@@ -393,10 +442,18 @@ class MermaidGenerator {
       // 确保样式属性格式正确
       let cleanProps = styleProps
         .replace(/[{}]/g, '') // 移除花括号
+        .replace(/\s+/g, ' ') // 合并多个空格
         .trim();
       
       return `style ${nodeId} ${cleanProps}`;
     });
+
+    // 移除空行和多余的空白
+    fixedCode = fixedCode
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .join('\n');
 
     return fixedCode;
   }

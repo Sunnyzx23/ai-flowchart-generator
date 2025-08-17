@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Layout from '../components/layout/Layout';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui';
 import RequirementInputForm from '../components/input/RequirementInputForm';
@@ -7,6 +7,7 @@ import AIAnalysisProgress from '../components/ai/AIAnalysisProgress';
 import AIErrorAlert from '../components/ai/AIErrorAlert';
 
 const InputPage = ({ onNavigate, currentPage, onResult }) => {
+  const progressRef = useRef(null);
   const [inputData, setInputData] = useState({
     content: '',
     productType: '',
@@ -44,6 +45,16 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
         implementType: data.implementType,
         inputMethod: data.inputMethod
       });
+      
+      // 延迟一点时间后滚动到进度条区域，确保进度条已经渲染
+      setTimeout(() => {
+        if (progressRef.current) {
+          progressRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }
+      }, 100);
     } catch (error) {
       console.error('提交失败:', error);
     }
@@ -108,7 +119,7 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
 
         {/* AI分析进度显示 */}
         {isLoading && (
-          <Card>
+          <Card ref={progressRef}>
             <CardContent className="pt-6">
               <AIAnalysisProgress
                 status={status}
