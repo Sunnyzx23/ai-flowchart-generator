@@ -147,11 +147,8 @@ class ClipboardService {
       };
     }
 
-    // 添加注释头部
-    const timestamp = new Date().toLocaleString();
-    const header = `// AI流程图生成工具 - Mermaid代码\n// 生成时间: ${timestamp}\n// 使用方法: 将此代码粘贴到Mermaid编辑器中\n\n`;
-    
-    const fullCode = header + mermaidCode.trim();
+    // 只复制纯净的Mermaid代码，不添加额外注释
+    const fullCode = mermaidCode.trim();
 
     const result = await this.copyText(fullCode);
     

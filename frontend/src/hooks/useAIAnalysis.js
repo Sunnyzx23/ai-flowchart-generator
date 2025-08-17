@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
  * AI分析状态管理Hook
  * 管理AI分析的完整生命周期，包括状态跟踪、进度更新、错误处理
  */
-export const useAIAnalysis = () => {
+export const useAIAnalysis = (existingSessionId = null) => {
   const [analysisState, setAnalysisState] = useState({
     status: 'idle', // idle, preparing, analyzing, generating, optimizing, completing, completed, error
     progress: 0,
@@ -18,6 +18,102 @@ export const useAIAnalysis = () => {
 
   const progressTimerRef = useRef(null);
   const statusCheckTimerRef = useRef(null);
+
+  // 辅助函数
+  const getProgressFromStatus = useCallback((status) => {
+    const statusMap = {
+      'idle': 0,
+      'pending': 10,
+      'processing': 30,
+      'analyzing': 50,
+      'generating': 70,
+      'validating': 85,
+      'completed': 100,
+      'failed': 0,
+      'error': 0
+    };
+    return statusMap[status] || 0;
+  }, []);
+
+  const getStatusMessage = useCallback((status) => {
+    const messageMap = {
+      'idle': '准备中...',
+      'pending': '等待处理...',
+      'processing': '正在处理请求...',
+      'analyzing': '正在分析需求...',
+      'generating': '正在生成流程图...',
+      'validating': '正在验证结果...',
+      'completed': '分析完成',
+      'failed': '分析失败',
+      'error': '分析失败'
+    };
+    return messageMap[status] || '处理中...';
+  }, []);
+
+  // 状态轮询
+  const startStatusPolling = useCallback((sessionId) => {
+    const pollStatus = async () => {
+      try {
+        const response = await fetch(`http://localhost:3001/api/v1/analysis/${sessionId}`);
+        if (!response.ok) {
+          throw new Error('状态查询失败');
+        }
+
+        const data = await response.json();
+        if (data.success && data.data) {
+          const sessionData = data.data;
+          
+          setAnalysisState(prev => ({
+            ...prev,
+            status: sessionData.status,
+            progress: getProgressFromStatus(sessionData.status),
+            message: getStatusMessage(sessionData.status)
+          }));
+
+          // 如果完成，设置结果并停止轮询
+          if (sessionData.status === 'completed' && sessionData.result) {
+            console.log('useAIAnalysis - 接收到完成的结果:', sessionData.result);
+            setAnalysisState(prev => ({
+              ...prev,
+              result: sessionData.result,
+              status: 'completed',
+              progress: 100
+            }));
+            
+            if (statusCheckTimerRef.current) {
+              clearInterval(statusCheckTimerRef.current);
+              statusCheckTimerRef.current = null;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('状态查询失败:', error);
+      }
+    };
+
+    // 立即执行一次
+    pollStatus();
+    
+    // 设置定时器
+    if (statusCheckTimerRef.current) {
+      clearInterval(statusCheckTimerRef.current);
+    }
+    statusCheckTimerRef.current = setInterval(pollStatus, 2000);
+  }, [getProgressFromStatus, getStatusMessage]);
+
+  // 如果传入了existingSessionId，直接查询该会话
+  useEffect(() => {
+    if (existingSessionId && analysisState.sessionId !== existingSessionId) {
+      console.log('useAIAnalysis - 查询现有会话:', existingSessionId);
+      setAnalysisState(prev => ({
+        ...prev,
+        sessionId: existingSessionId,
+        status: 'analyzing'
+      }));
+      // 开始轮询现有会话状态
+      startStatusPolling(existingSessionId);
+    }
+  }, [existingSessionId, startStatusPolling, analysisState.sessionId]);
 
   // 状态转换配置
   const statusFlow = {
@@ -76,52 +172,6 @@ export const useAIAnalysis = () => {
         error: error.message || '分析启动失败'
       }));
     }
-  }, []);
-
-  // 状态轮询
-  const startStatusPolling = useCallback((sessionId) => {
-    const pollStatus = async () => {
-      try {
-        const response = await fetch(`http://localhost:3001/api/v1/analysis/${sessionId}`);
-        if (!response.ok) {
-          throw new Error('状态查询失败');
-        }
-
-        const data = await response.json();
-        
-        if (!data.success || !data.data) {
-          throw new Error(data.error?.message || '状态查询失败');
-        }
-        
-        const analysisData = data.data;
-        
-        setAnalysisState(prev => ({
-          ...prev,
-          status: analysisData.status,
-          progress: analysisData.progress?.percentage || prev.progress,
-          message: analysisData.progress?.message || analysisData.message || prev.message,
-          result: analysisData.result || prev.result,
-          error: analysisData.error || prev.error
-        }));
-
-        // 如果分析完成或出错，停止轮询
-        if (analysisData.status === 'completed' || analysisData.status === 'error') {
-          clearInterval(statusCheckTimerRef.current);
-        }
-
-      } catch (error) {
-        setAnalysisState(prev => ({
-          ...prev,
-          status: 'error',
-          error: error.message || '状态查询失败'
-        }));
-        clearInterval(statusCheckTimerRef.current);
-      }
-    };
-
-    // 立即执行一次，然后每2秒轮询一次
-    pollStatus();
-    statusCheckTimerRef.current = setInterval(pollStatus, 2000);
   }, []);
 
   // 模拟进度更新（当没有实时进度时）
@@ -225,9 +275,9 @@ export const useAIAnalysis = () => {
     retryAnalysis,
     
     // 状态检查
-    isLoading: ['preparing', 'analyzing', 'generating', 'optimizing', 'completing'].includes(analysisState.status),
+    isLoading: ['pending', 'processing', 'analyzing', 'generating', 'validating'].includes(analysisState.status),
     isCompleted: analysisState.status === 'completed',
-    isError: analysisState.status === 'error',
+    isError: ['failed', 'error'].includes(analysisState.status),
     isIdle: analysisState.status === 'idle'
   };
 };

@@ -37,7 +37,7 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
     console.log('提交数据:', data);
     
     try {
-      // 使用新的会话管理API
+      // 启动AI分析，用户停留在当前页面看loading
       await startAnalysis({
         requirement: data.content,
         productType: data.productType,
@@ -56,8 +56,14 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
       if (onResult) {
         onResult(result);
       }
+      // 分析完成后自动跳转到结果页面
+      if (onNavigate) {
+        onNavigate('result');
+      }
     }
-  }, [isCompleted, result, onResult]);
+  }, [isCompleted, result, onResult, onNavigate]);
+
+
 
   // 重试处理
   const handleRetry = () => {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui';
 import ExportPanel from '../components/export/ExportPanel';
-import DrawioGuide from '../components/export/DrawioGuide';
+
 import FlowchartCanvas from '../components/flowchart/FlowchartCanvas';
 import drawioService from '../services/drawioService';
 import clipboardService from '../services/clipboardService';
@@ -10,18 +10,17 @@ import clipboardService from '../services/clipboardService';
 const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
   const [mermaidCode, setMermaidCode] = useState('');
   const [isRendering, setIsRendering] = useState(true);
-  const [showDrawioGuide, setShowDrawioGuide] = useState(false);
+
 
   useEffect(() => {
     console.log('FlowchartResult - resultData:', resultData);
     
-    // resultData 直接就是 result 对象：{mermaidCode: "...", rawResponse: "...", validation: {...}}
     if (resultData?.mermaidCode) {
       const code = resultData.mermaidCode;
       console.log('FlowchartResult - 设置Mermaid代码:', code);
       setMermaidCode(code);
     } else {
-      console.log('FlowchartResult - 没有找到Mermaid代码, resultData结构:', JSON.stringify(resultData, null, 2));
+      console.log('FlowchartResult - 没有找到Mermaid代码, 数据结构:', JSON.stringify(resultData, null, 2));
     }
   }, [resultData]);
 
@@ -34,6 +33,16 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
   // 处理渲染错误
   const handleRenderError = (error) => {
     console.error('Mermaid渲染失败:', error);
+    console.error('问题代码:', mermaidCode);
+    
+    // 尝试分析错误原因
+    if (error.message.includes('Parse error')) {
+      console.error('解析错误 - 可能的原因:');
+      console.error('1. 节点文本包含特殊字符');
+      console.error('2. 语法格式不正确');
+      console.error('3. 缺少必要的引号');
+    }
+    
     setIsRendering(false);
   };
 
@@ -137,41 +146,70 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
     }
   };
 
-  const handleOpenDrawio = async (code) => {
+  const handleOpenMermaidLive = async (code) => {
     try {
-      console.log('Draw.io跳转 - 尝试自动导入');
+      console.log('打开Mermaid Chart');
       const codeToUse = code || mermaidCode;
       
       if (!codeToUse) {
-        throw new Error('没有可导出的流程图代码');
+        alert('没有可导出的流程图代码');
+        return;
       }
       
-      const result = await drawioService.openDrawioEditor(codeToUse);
-      if (!result.success) {
-        throw new Error(result.message);
+      // 复制代码到剪贴板
+      try {
+        await navigator.clipboard.writeText(codeToUse);
+        console.log('Mermaid代码已复制到剪贴板');
+        
+        alert(`✅ Mermaid代码已复制到剪贴板！
+
+🚀 使用步骤：
+1. Mermaid Chart即将打开
+2. 点击 "Create new diagram" 或 "New Project"
+3. 在编辑器中粘贴代码 (Ctrl+V / Cmd+V)
+4. 查看生成的流程图并可直接导出`);
+        
+      } catch (error) {
+        console.warn('无法自动复制到剪贴板:', error);
+        alert(`请手动复制下面的Mermaid代码：
+
+${codeToUse}
+
+然后在Mermaid Chart中粘贴使用。`);
       }
-      console.log('Draw.io跳转成功:', result);
       
-      // 不再显示立即的提示，让系统自动尝试导入
-      // 如果8秒后自动导入失败，系统会自动显示指导
-      console.log('Draw.io已打开，系统正在后台尝试自动导入...');
+      // 直接打开官网，不使用URL参数
+      setTimeout(() => {
+        const mermaidUrl = 'https://www.mermaidchart.com/';
+        window.open(mermaidUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+      }, 1000);
+      
     } catch (error) {
-      console.error('Draw.io跳转失败:', error);
-      // 如果自动化失败，显示指导页面作为备用方案
-      setShowDrawioGuide(true);
+      console.error('打开Mermaid Chart失败:', error);
+      alert('打开Mermaid Chart失败: ' + error.message);
     }
   };
 
+
+
+  // 如果没有数据，显示错误状态
   if (!resultData) {
     return (
       <Layout onNavigate={onNavigate} currentPage={currentPage}>
-        <div className="max-w-4xl mx-auto text-center py-12">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            没有找到流程图数据
-          </h1>
-          <Button onClick={() => onNavigate('input')}>
-            返回输入页面
-          </Button>
+        <div className="max-w-4xl mx-auto space-y-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              流程图生成失败
+            </h1>
+            <p className="text-gray-600">
+              没有找到分析结果，请重新生成
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <Button onClick={() => onNavigate('input')}>
+              返回重新生成
+            </Button>
+          </div>
         </div>
       </Layout>
     );
@@ -187,9 +225,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
               流程图生成结果
             </h1>
             <p className="text-gray-600">
-              {resultData?.rawResponse?.includes('降级方案') 
-                ? '使用降级方案生成的基础流程图' 
-                : 'AI智能分析生成的业务流程图'}
+              AI智能分析生成的业务流程图
             </p>
           </div>
           <Button variant="secondary" onClick={onBack}>
@@ -225,8 +261,10 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
           onExportPNG={handleExportPNG}
           onExportPDF={handleExportPDF}
           onCopySource={handleCopySource}
-          onOpenDrawio={handleOpenDrawio}
+          onOpenMermaidLive={handleOpenMermaidLive}
         />
+
+
 
         {/* 源码显示区域 */}
         <Card>
@@ -243,28 +281,10 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
           </CardContent>
         </Card>
 
-        {/* AI分析信息 */}
-        {resultData?.rawResponse && (
-          <Card className="bg-blue-50 border-blue-200">
-            <CardHeader>
-              <CardTitle className="text-blue-800">AI分析说明</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-blue-700 text-sm">
-                {resultData.rawResponse}
-              </p>
-            </CardContent>
-          </Card>
-        )}
+
       </div>
       
-      {/* Draw.io指导弹窗 */}
-      {showDrawioGuide && (
-        <DrawioGuide
-          mermaidCode={mermaidCode}
-          onClose={() => setShowDrawioGuide(false)}
-        />
-      )}
+
     </Layout>
   );
 };

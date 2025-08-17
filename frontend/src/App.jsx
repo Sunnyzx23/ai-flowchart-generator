@@ -9,10 +9,14 @@ function App() {
   const [flowchartResult, setFlowchartResult] = useState(null);
 
   if (currentPage === 'input') {
-    return <InputPage onNavigate={setCurrentPage} currentPage={currentPage} onResult={(result) => {
-      setFlowchartResult(result);
-      setCurrentPage('result');
-    }} />;
+    return <InputPage 
+      onNavigate={setCurrentPage} 
+      currentPage={currentPage} 
+      onResult={(result) => {
+        console.log('App - 接收到分析结果:', result);
+        setFlowchartResult(result);
+      }}
+    />;
   }
 
   if (currentPage === 'result') {

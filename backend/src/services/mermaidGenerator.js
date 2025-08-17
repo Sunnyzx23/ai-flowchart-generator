@@ -311,10 +311,16 @@ class MermaidGenerator {
     const {
       removeComments = false,
       addStyles = true,
-      formatIndentation = true
+      formatIndentation = true,
+      fixSpecialChars = true
     } = options;
 
     let optimizedCode = code;
+
+    // 修复特殊字符问题
+    if (fixSpecialChars) {
+      optimizedCode = this.fixSpecialCharacters(optimizedCode);
+    }
 
     // 移除注释
     if (removeComments) {
@@ -330,6 +336,69 @@ class MermaidGenerator {
     optimizedCode = optimizedCode.replace(/\n\s*\n\s*\n/g, '\n\n');
 
     return optimizedCode.trim();
+  }
+
+  /**
+   * 修复Mermaid代码中的特殊字符问题
+   * @param {string} code - 原始代码
+   * @returns {string} 修复后的代码
+   */
+  fixSpecialCharacters(code) {
+    let fixedCode = code;
+
+    // 修复节点文本中的特殊字符
+    fixedCode = fixedCode.replace(/([A-Za-z0-9_]+)(\[|\(|\{)([^\[\]\(\)\{\}]*?)(\]|\)|\})/g, (match, nodeId, openBracket, text, closeBracket) => {
+      // 清理节点文本
+      let cleanText = text
+        .replace(/"/g, '') // 移除双引号
+        .replace(/'/g, '') // 移除单引号
+        .replace(/[<>]/g, '') // 移除尖括号
+        .replace(/[\[\]]/g, '') // 移除方括号
+        .replace(/[{}]/g, '') // 移除花括号
+        .replace(/\|/g, '') // 移除竖线
+        .replace(/\n/g, ' ') // 换行符转空格
+        .replace(/\s+/g, ' ') // 多个空格合并为一个
+        .trim();
+
+      // 如果文本包含特殊字符，用双引号包围
+      if (cleanText.includes('(') || cleanText.includes(')') || 
+          cleanText.includes('[') || cleanText.includes(']') ||
+          cleanText.includes('{') || cleanText.includes('}') ||
+          cleanText.includes('|') || cleanText.includes('?') ||
+          cleanText.includes('!') || cleanText.includes(':') ||
+          cleanText.includes(';') || cleanText.includes(',')) {
+        cleanText = `"${cleanText}"`;
+      }
+
+      return `${nodeId}${openBracket}${cleanText}${closeBracket}`;
+    });
+
+    // 修复连接线标签中的特殊字符
+    fixedCode = fixedCode.replace(/\|([^|]*?)\|/g, (match, label) => {
+      let cleanLabel = label
+        .replace(/"/g, '') // 移除双引号
+        .replace(/'/g, '') // 移除单引号
+        .replace(/[<>]/g, '') // 移除尖括号
+        .replace(/[\[\]]/g, '') // 移除方括号
+        .replace(/[{}]/g, '') // 移除花括号
+        .replace(/\n/g, ' ') // 换行符转空格
+        .replace(/\s+/g, ' ') // 多个空格合并为一个
+        .trim();
+
+      return `|${cleanLabel}|`;
+    });
+
+    // 修复样式定义中的问题
+    fixedCode = fixedCode.replace(/style\s+([A-Za-z0-9_]+)\s+(.+)/g, (match, nodeId, styleProps) => {
+      // 确保样式属性格式正确
+      let cleanProps = styleProps
+        .replace(/[{}]/g, '') // 移除花括号
+        .trim();
+      
+      return `style ${nodeId} ${cleanProps}`;
+    });
+
+    return fixedCode;
   }
 
   /**

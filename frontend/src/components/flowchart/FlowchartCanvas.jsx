@@ -19,6 +19,9 @@ const FlowchartCanvas = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isRendered, setIsRendered] = useState(false);
   const [currentTheme, setCurrentTheme] = useState('default');
+  const [toolbarPosition, setToolbarPosition] = useState({ x: 16, y: 16 });
+  const [isToolbarDragging, setIsToolbarDragging] = useState(false);
+  const [toolbarDragStart, setToolbarDragStart] = useState({ x: 0, y: 0 });
 
   // 缩放控制
   const handleZoomIn = useCallback(() => {
@@ -90,6 +93,42 @@ const FlowchartCanvas = ({
       renderMermaid();
     }
   }, [mermaidCode]);
+
+  // 工具栏拖拽功能
+  const handleToolbarMouseDown = useCallback((e) => {
+    if (e.target.closest('button') || e.target.closest('[role="button"]')) {
+      return; // 如果点击的是按钮，不启动拖拽
+    }
+    
+    setIsToolbarDragging(true);
+    setToolbarDragStart({
+      x: e.clientX - toolbarPosition.x,
+      y: e.clientY - toolbarPosition.y
+    });
+  }, [toolbarPosition]);
+
+  const handleToolbarMouseMove = useCallback((e) => {
+    if (!isToolbarDragging) return;
+    
+    const container = containerRef.current;
+    if (!container) return;
+    
+    const containerRect = container.getBoundingClientRect();
+    const newX = Math.max(0, Math.min(
+      containerRect.width - 300, // 工具栏宽度约300px
+      e.clientX - toolbarDragStart.x
+    ));
+    const newY = Math.max(0, Math.min(
+      containerRect.height - 60, // 工具栏高度约60px
+      e.clientY - toolbarDragStart.y
+    ));
+    
+    setToolbarPosition({ x: newX, y: newY });
+  }, [isToolbarDragging, toolbarDragStart]);
+
+  const handleToolbarMouseUp = useCallback(() => {
+    setIsToolbarDragging(false);
+  }, []);
 
   // 获取主题配置
   const getThemeConfig = useCallback(() => {
@@ -300,14 +339,14 @@ const FlowchartCanvas = ({
       `;
       onRenderError?.(error);
     }
-  }, [mermaidCode, onRenderComplete, onRenderError]);
+  }, [mermaidCode, onRenderComplete, onRenderError, getThemeConfig]);
 
   // 监听代码变化重新渲染
   useEffect(() => {
     if (mermaidCode) {
       renderMermaid();
     }
-  }, [mermaidCode, renderMermaid]);
+  }, [mermaidCode, currentTheme]); // 依赖主题变化而不是renderMermaid函数
 
   // 添加事件监听器
   useEffect(() => {
@@ -317,18 +356,43 @@ const FlowchartCanvas = ({
     container.addEventListener('wheel', handleWheel, { passive: false });
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', handleToolbarMouseMove);
+    document.addEventListener('mouseup', handleToolbarMouseUp);
 
     return () => {
       container.removeEventListener('wheel', handleWheel);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', handleToolbarMouseMove);
+      document.removeEventListener('mouseup', handleToolbarMouseUp);
     };
-  }, [handleWheel, handleMouseMove, handleMouseUp]);
+  }, [handleWheel, handleMouseMove, handleMouseUp, handleToolbarMouseMove, handleToolbarMouseUp]);
 
   return (
     <div className="relative w-full h-full bg-gray-50 rounded-lg overflow-hidden">
       {/* 工具栏 */}
-      <div className="absolute top-4 right-4 z-10 flex space-x-2 bg-white rounded-lg shadow-md p-2">
+      <div 
+        className={`absolute z-10 bg-white rounded-lg shadow-md p-2 ${
+          isToolbarDragging ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
+        style={{ 
+          left: `${toolbarPosition.x}px`, 
+          top: `${toolbarPosition.y}px`,
+          userSelect: 'none'
+        }}
+        onMouseDown={handleToolbarMouseDown}
+      >
+        <div className="flex items-center space-x-2">
+        {/* 拖拽手柄 */}
+        <div className="flex flex-col space-y-1 px-1 cursor-grab active:cursor-grabbing" title="拖拽移动工具栏">
+          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+        </div>
+        
+        {/* 分隔线 */}
+        <div className="w-px h-6 bg-gray-300 self-center" />
+        
         {/* 主题选择器 */}
         <FlowchartThemeSelector
           currentTheme={currentTheme}
@@ -387,6 +451,7 @@ const FlowchartCanvas = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
           </svg>
         </Button>
+        </div>
       </div>
 
       {/* 加载状态 */}

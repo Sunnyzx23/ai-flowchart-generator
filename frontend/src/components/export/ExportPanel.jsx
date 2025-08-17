@@ -13,14 +13,14 @@ const ExportPanel = ({
   onExportPNG = () => {},
   onExportPDF = () => {},
   onCopySource = () => {},
-  onOpenDrawio = () => {},
+  onOpenMermaidLive = () => {},
   className = ''
 }) => {
   const [loadingStates, setLoadingStates] = useState({
     png: false,
     pdf: false,
     copy: false,
-    drawio: false,
+    mermaidLive: false,
     svg: false
   });
 
@@ -78,17 +78,19 @@ const ExportPanel = ({
     }
   };
 
-  // 处理Draw.io跳转
-  const handleOpenDrawio = async () => {
+
+
+  // 处理Mermaid Live Editor跳转
+  const handleOpenMermaidLive = async () => {
     if (isDisabled) return;
     
-    setLoadingStates(prev => ({ ...prev, drawio: true }));
+    setLoadingStates(prev => ({ ...prev, mermaidLive: true }));
     try {
-      await onOpenDrawio(mermaidCode);
+      await onOpenMermaidLive(mermaidCode);
     } catch (error) {
-      console.error('Draw.io跳转失败:', error);
+      console.error('Mermaid Live Editor跳转失败:', error);
     } finally {
-      setLoadingStates(prev => ({ ...prev, drawio: false }));
+      setLoadingStates(prev => ({ ...prev, mermaidLive: false }));
     }
   };
 
@@ -149,14 +151,14 @@ const ExportPanel = ({
         : 'border-gray-300 text-gray-700 hover:bg-gray-50'
     },
     {
-      id: 'drawio',
-      label: 'Draw.io编辑',
+      id: 'mermaidLive',
+      label: 'Mermaid Chart',
       icon: '🚀',
-      description: '自动导入流程图到Draw.io专业编辑器',
-      onClick: handleOpenDrawio,
-      loading: loadingStates.drawio,
-      variant: 'outline',
-      className: 'border-purple-300 text-purple-700 hover:bg-purple-50'
+      description: '在官方Mermaid Chart中编辑和导出（推荐）',
+      onClick: handleOpenMermaidLive,
+      loading: loadingStates.mermaidLive,
+      variant: 'default',
+      className: 'bg-blue-600 hover:bg-blue-700 text-white'
     },
     {
       id: 'svg',
@@ -167,16 +169,6 @@ const ExportPanel = ({
       loading: loadingStates.svg,
       variant: 'default',
       className: 'bg-green-600 hover:bg-green-700 text-white'
-    },
-    {
-      id: 'png-dev',
-      label: 'PNG导出',
-      icon: '🚧',
-      description: 'PNG图片导出（开发中）',
-      onClick: () => alert('PNG导出功能正在开发中，请先使用"复制源码"功能！'),
-      loading: false,
-      variant: 'outline',
-      className: 'border-gray-300 text-gray-500 hover:bg-gray-50 opacity-60'
     }
   ];
 
@@ -206,8 +198,8 @@ const ExportPanel = ({
       </CardHeader>
       
       <CardContent>
-        {/* 桌面端布局：2x2网格 */}
-        <div className="hidden md:grid md:grid-cols-2 md:gap-4">
+        {/* 桌面端布局：3列网格 */}
+        <div className="hidden md:grid md:grid-cols-3 md:gap-4">
           {exportButtons.map((button) => (
             <ExportButton
               key={button.id}
