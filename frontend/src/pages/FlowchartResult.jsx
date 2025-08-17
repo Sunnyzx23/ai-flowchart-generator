@@ -12,6 +12,7 @@ import API_CONFIG from '../config/api.js';
 const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
   const [mermaidCode, setMermaidCode] = useState('');
   const [isRendering, setIsRendering] = useState(true);
+  // 强制触发新部署以清除Vercel缓存
 
 
   useEffect(() => {
