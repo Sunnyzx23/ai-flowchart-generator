@@ -174,12 +174,16 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
         setTimeout(() => {
           alert(`✅ 已在Mermaid Chart Play中打开！
 
-🎯 使用说明：
-• Mermaid代码已复制到剪贴板
-• 在编辑器中粘贴代码 (Ctrl+V / Cmd+V)
-• 可直接编辑和实时预览流程图
-• 支持导出PNG、SVG、PDF格式
-• 支持分享和保存项目`);
+📋 Mermaid代码已复制到剪贴板
+
+🚀 详细操作步骤：
+1️⃣ 点击页面左下角的 "Edit code" 按钮
+2️⃣ 在弹出的代码输入框中粘贴代码 (Ctrl+V / Cmd+V)
+3️⃣ 即可实时预览和编辑流程图
+4️⃣ 使用右上角按钮导出PNG、SVG、PDF格式
+5️⃣ 支持分享和保存项目到云端
+
+💡 提示：如果没看到"Edit code"按钮，请刷新页面重试`);
         }, 500);
         
       } catch (clipboardError) {
@@ -194,10 +198,14 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
 📋 请手动复制以下代码：
 ${codeToUse}
 
-🚀 使用步骤：
-1. 在编辑器中清空默认代码
-2. 粘贴上述Mermaid代码
-3. 即可查看和编辑流程图`);
+🚀 详细操作步骤：
+1️⃣ 点击页面左下角的 "Edit code" 按钮
+2️⃣ 在弹出的代码输入框中清空默认代码
+3️⃣ 粘贴上述Mermaid代码
+4️⃣ 即可实时预览和编辑流程图
+5️⃣ 使用右上角按钮导出PNG、SVG、PDF格式
+
+💡 提示：如果没看到"Edit code"按钮，请刷新页面重试`);
       }
       
     } catch (error) {
