@@ -6,6 +6,7 @@ import ExportPanel from '../components/export/ExportPanel';
 import FlowchartCanvas from '../components/flowchart/FlowchartCanvas';
 import drawioService from '../services/drawioService';
 import clipboardService from '../services/clipboardService';
+import { getApiUrl } from '../config/api.js';
 
 const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
   const [mermaidCode, setMermaidCode] = useState('');
@@ -54,7 +55,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
       return;
     }
     try {
-      const response = await fetch('http://localhost:3001/api/v1/export', {
+      const response = await fetch('getApiUrl('/api/export')', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,7 +78,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
       const result = await response.json();
       if (result.success) {
         // 触发下载
-        const downloadUrl = `http://localhost:3001${result.data.downloadUrl}`;
+        const downloadUrl = `getApiUrl('')${result.data.downloadUrl}`;
         const link = document.createElement('a');
         link.href = downloadUrl;
         link.download = result.data.fileName;
@@ -98,7 +99,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
       return;
     }
     try {
-      const response = await fetch('http://localhost:3001/api/v1/export', {
+      const response = await fetch('getApiUrl('/api/export')', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,7 +121,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
       const result = await response.json();
       if (result.success) {
         // 触发下载
-        const downloadUrl = `http://localhost:3001${result.data.downloadUrl}`;
+        const downloadUrl = `getApiUrl('')${result.data.downloadUrl}`;
         const link = document.createElement('a');
         link.href = downloadUrl;
         link.download = result.data.fileName;

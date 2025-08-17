@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getApiUrl } from '../config/api.js';
 
 /**
  * AI分析状态管理Hook
@@ -207,7 +208,7 @@ export const useAIAnalysis = (existingSessionId = null) => {
       }));
 
       // 调用后端API创建分析会话
-      const response = await fetch('http://localhost:3001/api/v1/analysis/create', {
+      const response = await fetch(getApiUrl('/api/ai-analysis'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -221,17 +222,21 @@ export const useAIAnalysis = (existingSessionId = null) => {
 
       const data = await response.json();
       
-      if (!data.success || !data.data || !data.data.sessionId) {
-        throw new Error(data.error?.message || '创建分析会话失败');
+      if (!data.success) {
+        throw new Error(data.error || '分析失败');
       }
       
+      // 直接设置结果，不需要轮询
       setAnalysisState(prev => ({
         ...prev,
-        sessionId: data.data.sessionId
+        status: 'completed',
+        progress: 100,
+        message: '分析完成',
+        result: {
+          mermaidCode: data.mermaidCode,
+          fullResponse: data.fullResponse
+        }
       }));
-
-      // 开始状态轮询
-      startStatusPolling(data.data.sessionId);
       
     } catch (error) {
       setAnalysisState(prev => ({
