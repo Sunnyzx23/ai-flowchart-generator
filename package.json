@@ -1,0 +1,11 @@
+{
+  "name": "ai-flowchart-generator",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "dev": "cd frontend && npm run dev"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
