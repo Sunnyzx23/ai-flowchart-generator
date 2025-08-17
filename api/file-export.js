@@ -1,5 +1,5 @@
 // 导出API - 用于生成PNG/PDF等格式的流程图
-module.exports = (req, res) => {
+export default function handler(req, res) {
   // 设置CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');

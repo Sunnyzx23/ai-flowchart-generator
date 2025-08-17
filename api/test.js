@@ -1,8 +1,8 @@
 // 简单测试API
-module.exports = (req, res) => {
+export default function handler(req, res) {
   res.status(200).json({ 
     message: 'Test API works!',
     method: req.method,
     timestamp: new Date().toISOString()
   });
-};
+}

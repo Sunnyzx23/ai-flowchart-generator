@@ -1,5 +1,5 @@
-// AI分析API - 使用CommonJS格式
-module.exports = async (req, res) => {
+// AI分析API - 使用ES模块格式
+export default async function handler(req, res) {
   // 设置CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
