@@ -7,6 +7,7 @@ import FlowchartCanvas from '../components/flowchart/FlowchartCanvas';
 import drawioService from '../services/drawioService';
 import clipboardService from '../services/clipboardService';
 import { getApiUrl } from '../config/api.js';
+import API_CONFIG from '../config/api.js';
 
 const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
   const [mermaidCode, setMermaidCode] = useState('');
@@ -55,7 +56,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
       return;
     }
     try {
-      const response = await fetch(getApiUrl('/api/export'), {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.EXPORT), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,7 +100,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
       return;
     }
     try {
-      const response = await fetch(getApiUrl('/api/export'), {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.EXPORT), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -14,7 +14,7 @@ const API_CONFIG = {
     AI_ANALYSIS: '/api/ai-analysis',
     
     // 导出功能
-    EXPORT: '/api/export',
+    EXPORT: '/api/file-export',
     
     // 测试端点
     HEALTH: '/api/hello'
