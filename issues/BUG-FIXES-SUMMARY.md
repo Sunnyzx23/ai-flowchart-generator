@@ -12,12 +12,12 @@
 
 | 分类 | 数量 | 占比 |
 |------|------|------|
-| Vercel部署问题 | 9个 | 50.0% |
-| 后端服务器问题 | 3个 | 16.7% |
-| 前端数据处理 | 2个 | 11.1% |
-| React组件问题 | 2个 | 11.1% |
-| 网络通信问题 | 2个 | 11.1% |
-| **总计** | **18个** | **100%** |
+| Vercel部署问题 | 9个 | 47.4% |
+| 后端服务器问题 | 3个 | 15.8% |
+| 前端数据处理 | 3个 | 15.8% |
+| React组件问题 | 2个 | 10.5% |
+| 网络通信问题 | 2个 | 10.5% |
+| **总计** | **19个** | **100%** |
 
 ---
 
@@ -164,6 +164,53 @@ if (resultData?.mermaidCode) {
   setMermaidCode(code);
 }
 ```
+
+#### 2.3 AI生成的Mermaid语法错误
+**🚨 问题描述**
+```
+流程图渲染失败
+Parse error on line 28: ...界面] X --> U (重要提示) -->((简化关键点|-------...
+Expecting 'SEMI', 'NEWLINE', 'SPACE', 'EOF', 'subgraph', 'end', 'acc_title', 'acc_descr', 'acc_descr_multiline_value', 'AMP', 'COLON', 'STYLE', 'LINKSTYLE', 'CLASSDEF', 'CLASS', 'CLICK', 'DOWN', 'DEFAULT', 'NUM', 'COMMA', 'NODE_STRING', 'BRKT', 'MINUS', 'MULT', 'UNICODE_TEXT', 'direction_tb', 'direction_bt', 'direction_rl', 'direction_lr', got 'PS'
+```
+
+**🔍 根本原因**
+- AI生成的Mermaid代码包含语法错误
+- 复杂流程图中使用了不规范的节点语法
+- 可能包含特殊字符或格式错误
+- 长文本内容导致语法解析失败
+
+**✅ 解决方案**
+```javascript
+// 在AI API中增加Mermaid代码验证和清理
+function cleanMermaidCode(mermaidCode) {
+  return mermaidCode
+    // 移除可能导致解析错误的特殊字符
+    .replace(/\|{3,}/g, '|')  // 多个|符号简化为单个
+    .replace(/--{3,}/g, '--') // 多个-符号简化为双个
+    // 修复节点语法
+    .replace(/\(\(([^)]+)\)\)/g, '(($1))') // 确保双括号节点格式正确
+    .replace(/\[([^\]]{50,})\]/g, (match, text) => { // 长文本截断
+      return `[${text.substring(0, 30)}...]`;
+    })
+    // 移除空行和多余空格
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .join('\n');
+}
+
+// 在API返回前验证Mermaid语法
+if (!mermaidCode.includes('-->') && !mermaidCode.includes('---')) {
+  console.warn('生成的流程图可能不符合Mermaid语法标准');
+  // 返回简化版本或重新生成
+}
+```
+
+**🛡️ 预防措施**
+- 优化AI提示词，强调Mermaid语法规范
+- 限制节点文本长度，避免过长描述
+- 添加Mermaid代码后处理和验证逻辑
+- 为复杂流程提供简化模板
 
 ### 3. React组件问题
 

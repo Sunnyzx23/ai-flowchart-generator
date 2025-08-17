@@ -1,3 +1,45 @@
+// 【2.3节】Mermaid代码清理和修复函数
+function cleanMermaidCode(mermaidCode) {
+  console.log('开始清理Mermaid代码，原始长度:', mermaidCode.length);
+  
+  const cleaned = mermaidCode
+    // 移除可能导致解析错误的特殊字符
+    .replace(/\|{3,}/g, '|')  // 多个|符号简化为单个
+    .replace(/--{3,}/g, '--') // 多个-符号简化为双个
+    .replace(/={3,}/g, '==') // 多个=符号简化为双个
+    
+    // 修复节点语法 - 确保括号配对正确
+    .replace(/\(\(([^)]+)\)\)/g, '(($1))') // 确保双括号节点格式正确
+    .replace(/\{([^}]+)\}/g, '{$1}') // 确保花括号节点格式正确
+    
+    // 处理长文本 - 截断过长的节点标签
+    .replace(/\[([^\]]{40,})\]/g, (match, text) => {
+      const shortText = text.substring(0, 30).trim();
+      return `[${shortText}...]`;
+    })
+    .replace(/\(([^)]{40,})\)/g, (match, text) => {
+      const shortText = text.substring(0, 30).trim();
+      return `(${shortText}...)`;
+    })
+    
+    // 清理连接符号
+    .replace(/\s*-->\s*/g, ' --> ') // 标准化箭头连接
+    .replace(/\s*---\s*/g, ' --- ') // 标准化线条连接
+    
+    // 移除空行和多余空格
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .join('\n')
+    
+    // 移除可能导致语法错误的特殊字符序列
+    .replace(/\|\s*-{3,}\s*\|/g, '|---|') // 修复表格式语法
+    .replace(/\s*\|\s*\|\s*/g, ' | '); // 修复多重管道符号
+
+  console.log('Mermaid代码清理完成，清理后长度:', cleaned.length);
+  return cleaned;
+}
+
 // AI分析API - 使用安全的配置读取方式
 export default async function handler(req, res) {
   // 标准CORS设置
@@ -182,6 +224,9 @@ flowchart TD
     if (!mermaidCode.toLowerCase().includes('flowchart')) {
       mermaidCode = `flowchart TD\n${mermaidCode}`;
     }
+
+    // 【2.3节】Mermaid语法错误修复和清理
+    mermaidCode = cleanMermaidCode(mermaidCode);
 
     // 基本验证
     if (!mermaidCode.includes('-->') && !mermaidCode.includes('---')) {
