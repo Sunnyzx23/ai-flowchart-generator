@@ -46,19 +46,46 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
         inputMethod: data.inputMethod
       });
       
-      // 延迟一点时间后滚动到进度条区域，确保进度条已经渲染
-      setTimeout(() => {
-        if (progressRef.current) {
-          progressRef.current.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
-          });
-        }
-      }, 100);
     } catch (error) {
       console.error('提交失败:', error);
     }
   };
+
+  // 监听loading状态变化，自动滚动到进度条区域
+  useEffect(() => {
+    if (isLoading) {
+      console.log('检测到loading状态，准备滚动到进度条区域');
+      
+      // 多次尝试滚动，确保成功
+      const attemptScroll = (attempt = 1) => {
+        if (progressRef.current) {
+          console.log(`第${attempt}次尝试滚动到进度条区域`);
+          progressRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'nearest'
+          });
+        } else if (attempt < 5) {
+          // 如果ref还没准备好，继续尝试
+          console.log(`第${attempt}次尝试失败，progressRef.current为空，将在${100 * attempt}ms后重试`);
+          setTimeout(() => attemptScroll(attempt + 1), 100 * attempt);
+        } else {
+          console.warn('5次尝试后仍无法找到progressRef，尝试备用滚动方法');
+          // 备用方法：滚动到页面底部
+          window.scrollTo({
+            top: document.documentElement.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      };
+      
+      // 立即尝试一次，然后延迟尝试
+      attemptScroll();
+      const scrollTimer = setTimeout(() => attemptScroll(2), 200);
+      
+      return () => clearTimeout(scrollTimer);
+    }
+  }, [isLoading]);
 
   // 监听分析完成事件
   useEffect(() => {
