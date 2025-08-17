@@ -86,11 +86,40 @@ const ExportPanel = ({
     
     setLoadingStates(prev => ({ ...prev, mermaidLive: true }));
     try {
-      await onOpenMermaidLive(mermaidCode);
+      if (onOpenMermaidLive) {
+        await onOpenMermaidLive(mermaidCode);
+      } else {
+        // 如果没有传入处理函数，使用默认实现
+        await openMermaidLiveEditor(mermaidCode);
+      }
     } catch (error) {
       console.error('Mermaid Live Editor跳转失败:', error);
     } finally {
       setLoadingStates(prev => ({ ...prev, mermaidLive: false }));
+    }
+  };
+
+  // 默认的Mermaid Chart Play打开逻辑
+  const openMermaidLiveEditor = async (code) => {
+    if (!code) {
+      alert('没有可导出的流程图代码');
+      return;
+    }
+
+    try {
+      // 复制代码到剪贴板
+      await navigator.clipboard.writeText(code);
+      
+      // 打开Mermaid Chart Play编辑器
+      const mermaidPlayUrl = 'https://www.mermaidchart.com/play';
+      window.open(mermaidPlayUrl, '_blank', 'width=1400,height=900,scrollbars=yes,resizable=yes');
+      
+    } catch (error) {
+      // 备用方案：直接打开编辑器
+      const mermaidPlayUrl = 'https://www.mermaidchart.com/play';
+      window.open(mermaidPlayUrl, '_blank', 'width=1400,height=900,scrollbars=yes,resizable=yes');
+      
+      alert(`请手动复制以下Mermaid代码：\n\n${code}\n\n然后在编辑器中粘贴使用。`);
     }
   };
 
@@ -154,7 +183,7 @@ const ExportPanel = ({
       id: 'mermaidLive',
       label: 'Mermaid Chart',
       icon: '🚀',
-      description: '在官方Mermaid Chart中编辑和导出（推荐）',
+      description: '在Mermaid Chart Play中编辑（代码自动复制）',
       onClick: handleOpenMermaidLive,
       loading: loadingStates.mermaidLive,
       variant: 'default',

@@ -151,7 +151,7 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
 
   const handleOpenMermaidLive = async (code) => {
     try {
-      console.log('打开Mermaid Chart');
+      console.log('打开Mermaid Live Editor');
       const codeToUse = code || mermaidCode;
       
       if (!codeToUse) {
@@ -159,37 +159,69 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
         return;
       }
       
-      // 复制代码到剪贴板
+      // 方案1: 尝试使用Mermaid Chart Play (推荐)
       try {
+        // 复制代码到剪贴板，用户可以直接粘贴
         await navigator.clipboard.writeText(codeToUse);
         console.log('Mermaid代码已复制到剪贴板');
         
-        alert(`✅ Mermaid代码已复制到剪贴板！
+        // 打开Mermaid Chart Play编辑器
+        const mermaidPlayUrl = 'https://www.mermaidchart.com/play';
+        console.log('使用Mermaid Chart Play:', mermaidPlayUrl);
+        window.open(mermaidPlayUrl, '_blank', 'width=1400,height=900,scrollbars=yes,resizable=yes');
+        
+        // 显示使用提示
+        setTimeout(() => {
+          alert(`✅ 已在Mermaid Chart Play中打开！
+
+🎯 使用说明：
+• Mermaid代码已复制到剪贴板
+• 在编辑器中粘贴代码 (Ctrl+V / Cmd+V)
+• 可直接编辑和实时预览流程图
+• 支持导出PNG、SVG、PDF格式
+• 支持分享和保存项目`);
+        }, 500);
+        
+      } catch (clipboardError) {
+        console.warn('复制到剪贴板失败，尝试备用方案:', clipboardError);
+        
+        // 方案2: 备用方案 - 直接打开编辑器，显示代码供用户复制
+        const mermaidPlayUrl = 'https://www.mermaidchart.com/play';
+        window.open(mermaidPlayUrl, '_blank', 'width=1400,height=900,scrollbars=yes,resizable=yes');
+        
+        alert(`✅ Mermaid Chart Play已打开！
+
+📋 请手动复制以下代码：
+${codeToUse}
 
 🚀 使用步骤：
-1. Mermaid Chart即将打开
-2. 点击 "Create new diagram" 或 "New Project"
+1. 在编辑器中清空默认代码
+2. 粘贴上述Mermaid代码
+3. 即可查看和编辑流程图`);
+      }
+      
+    } catch (error) {
+      console.error('打开Mermaid Live Editor失败:', error);
+      
+      // 方案3: 最后的备用方案 - 使用官方网站
+      try {
+        await navigator.clipboard.writeText(codeToUse);
+        const mermaidChartUrl = 'https://www.mermaidchart.com/';
+        window.open(mermaidChartUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+        
+        alert(`⚠️ 使用备用方案打开Mermaid Chart
+
+✅ Mermaid代码已复制到剪贴板！
+
+🚀 使用步骤：
+1. 点击 "Start for free" 或 "Create new diagram"
+2. 选择 "Flowchart" 类型
 3. 在编辑器中粘贴代码 (Ctrl+V / Cmd+V)
 4. 查看生成的流程图并可直接导出`);
         
-      } catch (error) {
-        console.warn('无法自动复制到剪贴板:', error);
-        alert(`请手动复制下面的Mermaid代码：
-
-${codeToUse}
-
-然后在Mermaid Chart中粘贴使用。`);
+      } catch (fallbackError) {
+        alert('打开Mermaid编辑器失败: ' + fallbackError.message);
       }
-      
-      // 直接打开官网，不使用URL参数
-      setTimeout(() => {
-        const mermaidUrl = 'https://www.mermaidchart.com/';
-        window.open(mermaidUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
-      }, 1000);
-      
-    } catch (error) {
-      console.error('打开Mermaid Chart失败:', error);
-      alert('打开Mermaid Chart失败: ' + error.message);
     }
   };
 
