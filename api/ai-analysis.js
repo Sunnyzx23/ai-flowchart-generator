@@ -1,104 +1,38 @@
-// AI分析API - 使用ES模块格式
-export default async function handler(req, res) {
-  // 设置CORS
-  res.setHeader('Access-Control-Allow-Credentials', true);
+// AI分析API - 简化版本，先确保基本功能工作
+export default function handler(req, res) {
+  // 使用与hello.js相同的CORS设置
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
-
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  // 处理OPTIONS预检请求
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
-
+  
+  // 记录请求方法用于调试
+  console.log('收到请求方法:', req.method);
+  console.log('请求头:', req.headers);
+  
+  // 验证POST方法
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  try {
-    const { requirements, productType, implementType } = req.body;
-
-    if (!requirements) {
-      return res.status(400).json({ error: '需求描述不能为空' });
-    }
-
-    // 检查环境变量
-    if (!process.env.DEEPSEEK_API_KEY || !process.env.DEEPSEEK_BASE_URL) {
-      return res.status(500).json({ 
-        error: '服务器配置错误',
-        details: 'Missing API configuration'
-      });
-    }
-
-    // 调用DeepSeek API
-    const apiResponse = await fetch(process.env.DEEPSEEK_BASE_URL + '/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: process.env.DEFAULT_MODEL || 'deepseek-chat',
-        messages: [
-          {
-            role: 'system',
-            content: `你是一个专业的业务流程分析师。请根据用户的需求描述，生成详细的业务流程图。
-
-产品类型：${productType || '通用'}
-实现方式：${implementType || '通用'}
-
-请按照以下格式返回Mermaid流程图代码：
-
-\`\`\`mermaid
-flowchart TD
-    A[开始] --> B[步骤1]
-    B --> C[步骤2]
-    C --> D[结束]
-\`\`\`
-
-要求：
-1. 使用flowchart TD格式
-2. 节点名称要清晰明确
-3. 包含主要的业务流程步骤
-4. 考虑异常处理和分支逻辑`
-          },
-          {
-            role: 'user',
-            content: requirements
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
-      })
-    });
-
-    if (!apiResponse.ok) {
-      const errorText = await apiResponse.text();
-      throw new Error(`DeepSeek API error: ${apiResponse.status} - ${errorText}`);
-    }
-
-    const data = await apiResponse.json();
-    
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      throw new Error('Invalid API response format');
-    }
-    
-    const aiResponse = data.choices[0].message.content;
-    
-    // 提取Mermaid代码
-    const mermaidMatch = aiResponse.match(/```mermaid\n([\s\S]*?)\n```/);
-    const mermaidCode = mermaidMatch ? mermaidMatch[1] : aiResponse;
-
-    return res.status(200).json({
-      success: true,
-      mermaidCode: mermaidCode.trim(),
-      fullResponse: aiResponse
-    });
-
-  } catch (error) {
-    console.error('AI Analysis Error:', error);
-    return res.status(500).json({ 
-      error: 'AI分析失败',
-      details: error.message 
+    return res.status(405).json({ 
+      error: 'Method not allowed',
+      receivedMethod: req.method,
+      expectedMethod: 'POST',
+      debug: 'This is the simplified version for debugging'
     });
   }
+  
+  // 简单响应，确认API工作
+  return res.status(200).json({
+    success: true,
+    message: 'AI Analysis API is working!',
+    method: req.method,
+    timestamp: new Date().toISOString(),
+    body: req.body,
+    data: {
+      note: '这是简化版本，用于测试API基本功能'
+    }
+  });
 }
