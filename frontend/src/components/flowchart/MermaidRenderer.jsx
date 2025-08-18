@@ -66,6 +66,28 @@ const attemptCodeFix = (code, errorMessage) => {
       .replace(/---\s*-+/g, ' --- ')        // --- -- 转为 ---
       .replace(/=+\s*>+/g, ' --> ')         // = > 转为 -->
       
+      // 第六步：修复subgraph和注释语法
+      .replace(/subgraph\s+([^{}\n]+)/g, (match, title) => {
+        const cleanTitle = title
+          .replace(/[^\w\s\u4e00-\u9fff]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return cleanTitle ? `subgraph ${cleanTitle}` : 'subgraph 流程';
+      })
+      // 修复以中文或特殊字符开头的节点ID
+      .replace(/^([^A-Za-z0-9_%\s][^A-Za-z0-9_\s]*)\s*(-->|---)/gm, 'N$2')
+      .replace(/([^A-Za-z0-9_\s]+)(\[|\(|\{)/g, 'N$2')
+      // 修复箭头连接中的中文节点ID
+      .replace(/(-->|---)\s+([^\sA-Za-z0-9_\[\(\{]+)\s+([A-Za-z0-9_]+\[)/g, '$1 $3')
+      .replace(/(-->|---)\s+([^\sA-Za-z0-9_\[\(\{]+)\s+/g, '$1 N')
+      // 修复节点ID连在一起的问题，如 AB[...]P
+      .replace(/([A-Za-z0-9_]+\[[^\]]*\])([A-Za-z0-9_]+)(\s*-->)/g, '$1\n$2$3')
+      // 移除或转换非法的文本内容
+      .replace(/^#[^%]/gm, '%% ')          // 将#注释转为%%注释
+      .replace(/^\d+\.\s*/gm, '%% ')       // 将数字列表转为注释
+      .replace(/^\*\s*/gm, '%% ')          // 将星号列表转为注释
+      .replace(/^-\s*/gm, '%% ')           // 将短横线列表转为注释
+      
       // 最终清理
       .replace(/\s{2,}/g, ' ')              // 合并多个空格
       .trim();

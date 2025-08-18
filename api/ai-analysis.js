@@ -96,6 +96,29 @@ function cleanMermaidCode(mermaidCode) {
       .replace(/---\s*-+/g, ' --- ')        // --- -- 转为 ---
       .replace(/=+\s*>+/g, ' --> ')         // = > 转为 -->
       
+      // 第五点五步：修复subgraph和注释语法
+      .replace(/subgraph\s+([^{}\n]+)/g, (match, title) => {
+        // 清理subgraph标题，移除特殊字符
+        const cleanTitle = title
+          .replace(/[^\w\s\u4e00-\u9fff]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return cleanTitle ? `subgraph ${cleanTitle}` : 'subgraph 流程';
+      })
+      // 修复以中文或特殊字符开头的节点ID
+      .replace(/^([^A-Za-z0-9_%\s][^A-Za-z0-9_\s]*)\s*(-->|---)/gm, 'N$2')
+      .replace(/([^A-Za-z0-9_\s]+)(\[|\(|\{)/g, 'N$2')
+      // 修复箭头连接中的中文节点ID
+      .replace(/(-->|---)\s+([^\sA-Za-z0-9_\[\(\{]+)\s+([A-Za-z0-9_]+\[)/g, '$1 $3')
+      .replace(/(-->|---)\s+([^\sA-Za-z0-9_\[\(\{]+)\s+/g, '$1 N')
+      // 修复节点ID连在一起的问题，如 AB[...]P
+      .replace(/([A-Za-z0-9_]+\[[^\]]*\])([A-Za-z0-9_]+)(\s*-->)/g, '$1\n$2$3')
+      // 移除或转换非法的文本内容
+      .replace(/^#[^%]/gm, '%% ')          // 将#注释转为%%注释
+      .replace(/^\d+\.\s*/gm, '%% ')       // 将数字列表转为注释
+      .replace(/^\*\s*/gm, '%% ')          // 将星号列表转为注释
+      .replace(/^-\s*/gm, '%% ')           // 将短横线列表转为注释
+      
       // 第六步：清理空行和格式化
       .split('\n')
       .map(line => line.trim())
@@ -217,7 +240,7 @@ export default async function handler(req, res) {
     // 内嵌完整V1版本提示词配置（智能业务分析版本）
     const promptConfig = {
       version: "2.0",
-      lastUpdated: "2024-08-15", 
+      lastUpdated: "2025-08-18", 
       description: "AI流程图生成工具 - 智能业务分析版本",
       systemRole: `你是资深的产品架构师和业务流程专家。你的任务是基于用户的简单需求描述，主动进行深度业务分析，推断出完整的业务流程，并生成专业的流程图。你要成为用户的业务分析助手，而不是要求用户提供所有细节。
 
