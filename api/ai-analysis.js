@@ -1,43 +1,140 @@
-// 【2.3节】Mermaid代码清理和修复函数
+// 【2.3节】增强版Mermaid代码清理和修复函数
 function cleanMermaidCode(mermaidCode) {
   console.log('开始清理Mermaid代码，原始长度:', mermaidCode.length);
   
-  const cleaned = mermaidCode
-    // 移除可能导致解析错误的特殊字符
-    .replace(/\|{3,}/g, '|')  // 多个|符号简化为单个
-    .replace(/--{3,}/g, '--') // 多个-符号简化为双个
-    .replace(/={3,}/g, '==') // 多个=符号简化为双个
-    
-    // 修复节点语法 - 确保括号配对正确
-    .replace(/\(\(([^)]+)\)\)/g, '(($1))') // 确保双括号节点格式正确
-    .replace(/\{([^}]+)\}/g, '{$1}') // 确保花括号节点格式正确
-    
-    // 处理长文本 - 截断过长的节点标签
-    .replace(/\[([^\]]{40,})\]/g, (match, text) => {
-      const shortText = text.substring(0, 30).trim();
-      return `[${shortText}...]`;
-    })
-    .replace(/\(([^)]{40,})\)/g, (match, text) => {
-      const shortText = text.substring(0, 30).trim();
-      return `(${shortText}...)`;
-    })
-    
-    // 清理连接符号
-    .replace(/\s*-->\s*/g, ' --> ') // 标准化箭头连接
-    .replace(/\s*---\s*/g, ' --- ') // 标准化线条连接
-    
-    // 移除空行和多余空格
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
-    .join('\n')
-    
-    // 移除可能导致语法错误的特殊字符序列
-    .replace(/\|\s*-{3,}\s*\|/g, '|---|') // 修复表格式语法
-    .replace(/\s*\|\s*\|\s*/g, ' | '); // 修复多重管道符号
+  try {
+    let cleaned = mermaidCode
+      // 第一步：预处理 - 先处理最严重的语法错误
+      .replace(/\|{2,}/g, ' ')  // 所有多个管道符都替换为空格
+      .replace(/#{2,}/g, '#')   // 多个#符号简化为单个
+      .replace(/\*{2,}/g, '*')  // 多个*符号简化为单个
+      
+      // 第二步：修复节点语法 - 彻底清理节点内的特殊字符
+      .replace(/\[([^\]]*)\]/g, (match, content) => {
+        // 清理方括号节点内容
+        const cleanContent = content
+          .replace(/\|+/g, ' ')           // 移除所有管道符
+          .replace(/#+/g, '')             // 移除井号
+          .replace(/\*+/g, '')            // 移除星号
+          .replace(/[^\w\s\u4e00-\u9fff]/g, ' ') // 只保留字母数字中文和空格
+          .replace(/\s+/g, ' ')           // 合并多个空格
+          .trim();
+        
+        // 如果内容过长，截断
+        const shortContent = cleanContent.length > 30 
+          ? cleanContent.substring(0, 25) + '...' 
+          : cleanContent;
+          
+        return shortContent ? `[${shortContent}]` : '[步骤]';
+      })
+      .replace(/\{([^}]*)\}/g, (match, content) => {
+        // 清理花括号节点内容
+        const cleanContent = content
+          .replace(/\|+/g, ' ')           // 移除所有管道符
+          .replace(/#+/g, '')             // 移除井号
+          .replace(/\*+/g, '')            // 移除星号
+          .replace(/[^\w\s\u4e00-\u9fff]/g, ' ') // 只保留字母数字中文和空格
+          .replace(/\s+/g, ' ')           // 合并多个空格
+          .trim();
+        
+        const shortContent = cleanContent.length > 30 
+          ? cleanContent.substring(0, 25) + '...' 
+          : cleanContent;
+          
+        return shortContent ? `{${shortContent}}` : '{条件}';
+      })
+      .replace(/\(\(([^)]*)\)\)/g, (match, content) => {
+        // 清理双括号节点内容
+        const cleanContent = content
+          .replace(/\|+/g, ' ')           // 移除所有管道符
+          .replace(/#+/g, '')             // 移除井号
+          .replace(/\*+/g, '')            // 移除星号
+          .replace(/[^\w\s\u4e00-\u9fff]/g, ' ') // 只保留字母数字中文和空格
+          .replace(/\s+/g, ' ')           // 合并多个空格
+          .trim();
+        
+        const shortContent = cleanContent.length > 30 
+          ? cleanContent.substring(0, 25) + '...' 
+          : cleanContent;
+          
+        return shortContent ? `((${shortContent}))` : '((开始))';
+      })
+      .replace(/\(([^)]*)\)/g, (match, content) => {
+        // 清理圆括号节点内容
+        const cleanContent = content
+          .replace(/\|+/g, ' ')           // 移除所有管道符
+          .replace(/#+/g, '')             // 移除井号
+          .replace(/\*+/g, '')            // 移除星号
+          .replace(/[^\w\s\u4e00-\u9fff]/g, ' ') // 只保留字母数字中文和空格
+          .replace(/\s+/g, ' ')           // 合并多个空格
+          .trim();
+        
+        const shortContent = cleanContent.length > 30 
+          ? cleanContent.substring(0, 25) + '...' 
+          : cleanContent;
+          
+        return shortContent ? `(${shortContent})` : '(流程)';
+      })
+      
+      // 第三步：彻底修复连接符 - 处理所有可能的连接符组合
+      .replace(/={2,}>{1,}/g, ' --> ')    // ===>>> 等转为 -->
+      .replace(/={2,}/g, ' --> ')         // == 等转为 -->
+      .replace(/-{3,}>/g, ' --> ')        // -----> 等转为 -->
+      .replace(/-{3,}/g, ' --- ')         // ------ 等转为 ---
+      .replace(/>{2,}/g, ' --> ')         // >> 等转为 -->
+      .replace(/\s*-->\s*/g, ' --> ')     // 标准化箭头连接
+      .replace(/\s*---\s*/g, ' --- ')     // 标准化线条连接
+      .replace(/\s*-\.-\s*/g, ' -.- ')    // 标准化虚线连接
+      
+      // 第四步：清理残留的特殊字符和修复语法错误
+      .replace(/\s*\|\s*-+\s*>/g, ' --> ')  // |---> 转为 -->
+      .replace(/\s*\|\s*=+\s*>/g, ' --> ')  // |===> 转为 -->
+      .replace(/\s*\|\s*/g, ' ')            // 清理剩余的独立管道符
+      
+      // 第五步：修复连接符后可能出现的问题
+      .replace(/-->\s*>+/g, ' --> ')        // --> >> 转为 -->
+      .replace(/---\s*-+/g, ' --- ')        // --- -- 转为 ---
+      .replace(/=+\s*>+/g, ' --> ')         // = > 转为 -->
+      
+      // 第六步：清理空行和格式化
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .map(line => {
+        // 确保每行不超过150个字符
+        if (line.length > 150) {
+          return line.substring(0, 130) + '...';
+        }
+        return line;
+      })
+      .join('\n')
+      
+      // 第七步：最终的语法修复
+      .replace(/\s{2,}/g, ' ')              // 合并多个空格
+      .replace(/\n\s*\n/g, '\n');          // 移除空行
 
-  console.log('Mermaid代码清理完成，清理后长度:', cleaned.length);
-  return cleaned;
+    // 第八步：最终验证和修复
+    if (!cleaned.includes('flowchart')) {
+      cleaned = 'flowchart TD\n' + cleaned;
+    }
+    
+    // 确保至少有一个有效的节点连接
+    if (!cleaned.includes('-->') && !cleaned.includes('---')) {
+      console.warn('警告：清理后的代码可能缺少节点连接');
+      // 添加一个简单的连接
+      cleaned = cleaned + '\nA --> B';
+    }
+
+    console.log('Mermaid代码清理完成，清理后长度:', cleaned.length);
+    return cleaned;
+    
+  } catch (error) {
+    console.error('Mermaid代码清理失败:', error);
+    // 返回一个最简单的备用流程图
+    return `flowchart TD
+    A[开始] --> B[处理中]
+    B --> C[结束]`;
+  }
 }
 
 // AI分析API - 使用安全的配置读取方式

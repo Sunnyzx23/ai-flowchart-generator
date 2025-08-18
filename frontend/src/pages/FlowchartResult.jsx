@@ -38,13 +38,31 @@ const FlowchartResult = ({ onNavigate, currentPage, resultData, onBack }) => {
     console.error('Mermaid渲染失败:', error);
     console.error('问题代码:', mermaidCode);
     
+    // 详细的错误分析和记录
+    const errorAnalysis = {
+      type: 'render_error',
+      message: error.message,
+      code: mermaidCode,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent
+    };
+    
     // 尝试分析错误原因
     if (error.message.includes('Parse error')) {
       console.error('解析错误 - 可能的原因:');
       console.error('1. 节点文本包含特殊字符');
-      console.error('2. 语法格式不正确');
+      console.error('2. 语法格式不正确');  
       console.error('3. 缺少必要的引号');
+      console.error('4. 复杂的节点语法不支持');
+      errorAnalysis.category = 'syntax_error';
+    } else if (error.message.includes('render')) {
+      errorAnalysis.category = 'render_error';
+    } else {
+      errorAnalysis.category = 'unknown_error';
     }
+    
+    // 记录错误用于后续分析优化
+    console.log('错误分析报告:', JSON.stringify(errorAnalysis, null, 2));
     
     setIsRendering(false);
   };

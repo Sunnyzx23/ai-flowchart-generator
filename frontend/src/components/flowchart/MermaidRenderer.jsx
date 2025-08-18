@@ -3,6 +3,128 @@ import mermaid from 'mermaid';
 import { cn } from '../../utils/cn';
 import { getThemeConfig, applyStylesToCode, detectFlowchartType } from './FlowchartThemes';
 
+// 智能修复Mermaid代码（与后端cleanMermaidCode保持一致）
+const attemptCodeFix = (code, errorMessage) => {
+  let fixedCode = code;
+  
+  // 根据错误信息进行针对性修复
+  if (errorMessage.includes('Parse error')) {
+    fixedCode = fixedCode
+      // 第一步：预处理 - 先处理最严重的语法错误
+      .replace(/\|{2,}/g, ' ')  // 所有多个管道符都替换为空格
+      .replace(/#{2,}/g, '#')   // 多个#符号简化为单个
+      .replace(/\*{2,}/g, '*')  // 多个*符号简化为单个
+      
+      // 第二步：修复节点语法 - 彻底清理节点内的特殊字符
+      .replace(/\[([^\]]*)\]/g, (match, content) => {
+        const cleanContent = content
+          .replace(/\|+/g, ' ')           // 移除所有管道符
+          .replace(/#+/g, '')             // 移除井号
+          .replace(/\*+/g, '')            // 移除星号
+          .replace(/[^\w\s\u4e00-\u9fff]/g, ' ') // 只保留字母数字中文和空格
+          .replace(/\s+/g, ' ')           // 合并多个空格
+          .trim();
+        
+        const shortContent = cleanContent.length > 20 
+          ? cleanContent.substring(0, 15) + '...' 
+          : cleanContent;
+          
+        return shortContent ? `[${shortContent}]` : '[步骤]';
+      })
+      .replace(/\{([^}]*)\}/g, (match, content) => {
+        const cleanContent = content
+          .replace(/\|+/g, ' ')           // 移除所有管道符
+          .replace(/#+/g, '')             // 移除井号
+          .replace(/\*+/g, '')            // 移除星号
+          .replace(/[^\w\s\u4e00-\u9fff]/g, ' ') // 只保留字母数字中文和空格
+          .replace(/\s+/g, ' ')           // 合并多个空格
+          .trim();
+          
+        const shortContent = cleanContent.length > 20 
+          ? cleanContent.substring(0, 15) + '...' 
+          : cleanContent;
+          
+        return shortContent ? `{${shortContent}}` : '{条件}';
+      })
+      
+      // 第三步：彻底修复连接符
+      .replace(/={2,}>{1,}/g, ' --> ')    // ===>>> 等转为 -->
+      .replace(/={2,}/g, ' --> ')         // == 等转为 -->
+      .replace(/-{3,}>/g, ' --> ')        // -----> 等转为 -->
+      .replace(/-{3,}/g, ' --- ')         // ------ 等转为 ---
+      .replace(/>{2,}/g, ' --> ')         // >> 等转为 -->
+      .replace(/\s*-->\s*/g, ' --> ')     // 标准化箭头连接
+      .replace(/\s*---\s*/g, ' --- ')     // 标准化线条连接
+      
+      // 第四步：清理残留的特殊字符
+      .replace(/\s*\|\s*-+\s*>/g, ' --> ')  // |---> 转为 -->
+      .replace(/\s*\|\s*=+\s*>/g, ' --> ')  // |===> 转为 -->
+      .replace(/\s*\|\s*/g, ' ')            // 清理剩余的独立管道符
+      
+      // 第五步：修复连接符后可能出现的问题
+      .replace(/-->\s*>+/g, ' --> ')        // --> >> 转为 -->
+      .replace(/---\s*-+/g, ' --- ')        // --- -- 转为 ---
+      .replace(/=+\s*>+/g, ' --> ')         // = > 转为 -->
+      
+      // 最终清理
+      .replace(/\s{2,}/g, ' ')              // 合并多个空格
+      .trim();
+  }
+  
+  return fixedCode !== code ? fixedCode : null;
+};
+
+// 获取错误类型和建议
+const getErrorType = (errorMessage) => {
+  if (!errorMessage) {
+    return {
+      message: '未知渲染错误',
+      suggestions: ['请尝试刷新页面', '检查网络连接']
+    };
+  }
+  
+  if (errorMessage.includes('Parse error')) {
+    return {
+      message: 'Mermaid语法解析错误',
+      suggestions: [
+        '代码包含不支持的特殊字符',
+        '节点文本可能过长或格式不正确',
+        '建议重新生成流程图'
+      ]
+    };
+  }
+  
+  if (errorMessage.includes('render')) {
+    return {
+      message: '流程图渲染失败',
+      suggestions: [
+        '流程图结构可能过于复杂',
+        '尝试简化流程图内容',
+        '检查浏览器兼容性'
+      ]
+    };
+  }
+  
+  if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+    return {
+      message: '网络连接错误',
+      suggestions: [
+        '检查网络连接状态',
+        '刷新页面重试',
+        '稍后再试'
+      ]
+    };
+  }
+  
+  return {
+    message: errorMessage.substring(0, 50) + (errorMessage.length > 50 ? '...' : ''),
+    suggestions: [
+      '请尝试刷新页面',
+      '如问题持续存在，请联系支持'
+    ]
+  };
+};
+
 /**
  * Mermaid流程图渲染组件
  * 将Mermaid代码渲染为SVG流程图
@@ -102,15 +224,53 @@ const MermaidRenderer = ({
     } catch (error) {
       console.error('Mermaid渲染失败:', error);
       setError(error.message || '渲染失败');
+      
+      // 尝试智能修复和重试
+      if (error.message && error.message.includes('Parse error') && code) {
+        console.log('尝试智能修复Mermaid代码...');
+        try {
+          const fixedCode = attemptCodeFix(code, error.message);
+          if (fixedCode && fixedCode !== code) {
+            console.log('使用修复后的代码重新渲染...');
+            // 递归调用，但限制重试次数
+            if (!containerRef.current.dataset.retryCount || parseInt(containerRef.current.dataset.retryCount) < 2) {
+              containerRef.current.dataset.retryCount = (parseInt(containerRef.current.dataset.retryCount) || 0) + 1;
+              const { svg } = await mermaid.render(mermaidId + '_fixed', fixedCode);
+              containerRef.current.innerHTML = svg;
+              setRendered(true);
+              onRenderSuccess?.(svg);
+              return; // 成功修复，直接返回
+            }
+          }
+        } catch (fixError) {
+          console.error('智能修复失败:', fixError);
+        }
+      }
+      
       onRenderError?.(error);
       
-      // 显示错误信息
+      // 显示友好的错误信息和建议
       if (containerRef.current) {
+        const errorType = getErrorType(error.message);
         containerRef.current.innerHTML = `
-          <div class="flex items-center justify-center h-32 bg-red-50 border border-red-200 rounded-lg">
-            <div class="text-center">
-              <div class="text-red-600 font-medium mb-1">流程图渲染失败</div>
-              <div class="text-red-500 text-sm">${error.message || '未知错误'}</div>
+          <div class="flex items-center justify-center min-h-32 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="text-center max-w-md">
+              <div class="text-red-600 font-medium mb-2">
+                <svg class="w-6 h-6 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                流程图渲染失败
+              </div>
+              <div class="text-red-500 text-sm mb-3">${errorType.message}</div>
+              <div class="text-gray-600 text-xs space-y-1">
+                ${errorType.suggestions.map(suggestion => `<div>• ${suggestion}</div>`).join('')}
+              </div>
+              <button 
+                onclick="window.location.reload()" 
+                class="mt-3 px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+              >
+                刷新重试
+              </button>
             </div>
           </div>
         `;
