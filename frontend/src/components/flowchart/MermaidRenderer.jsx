@@ -74,14 +74,11 @@ const attemptCodeFix = (code, errorMessage) => {
           .trim();
         return cleanTitle ? `subgraph ${cleanTitle}` : 'subgraph 流程';
       })
-      // 修复以中文或特殊字符开头的节点ID
-      .replace(/^([^A-Za-z0-9_%\s][^A-Za-z0-9_\s]*)\s*(-->|---)/gm, 'N$2')
-      .replace(/([^A-Za-z0-9_\s]+)(\[|\(|\{)/g, 'N$2')
-      // 修复箭头连接中的中文节点ID
-      .replace(/(-->|---)\s+([^\sA-Za-z0-9_\[\(\{]+)\s+([A-Za-z0-9_]+\[)/g, '$1 $3')
-      .replace(/(-->|---)\s+([^\sA-Za-z0-9_\[\(\{]+)\s+/g, '$1 N')
-      // 修复节点ID连在一起的问题，如 AB[...]P
-      .replace(/([A-Za-z0-9_]+\[[^\]]*\])([A-Za-z0-9_]+)(\s*-->)/g, '$1\n$2$3')
+      // 简单修复：与后端保持一致
+      // 1. 修复节点ID连在一起
+      .replace(/([A-Za-z0-9_]+\[[^\]]*\])([A-Za-z0-9_]+)/g, '$1\n$2')
+      // 2. 移除连接中的中文文本
+      .replace(/(-->|---)\s+[^\sA-Za-z0-9_\[\(\{]+\s+([A-Za-z0-9_]+)/g, '$1 $2')
       // 移除或转换非法的文本内容
       .replace(/^#[^%]/gm, '%% ')          // 将#注释转为%%注释
       .replace(/^\d+\.\s*/gm, '%% ')       // 将数字列表转为注释
@@ -247,26 +244,64 @@ const MermaidRenderer = ({
       console.error('Mermaid渲染失败:', error);
       setError(error.message || '渲染失败');
       
-      // 尝试智能修复和重试
-      if (error.message && error.message.includes('Parse error') && code) {
-        console.log('尝试智能修复Mermaid代码...');
-        try {
-          const fixedCode = attemptCodeFix(code, error.message);
-          if (fixedCode && fixedCode !== code) {
-            console.log('使用修复后的代码重新渲染...');
-            // 递归调用，但限制重试次数
-            if (!containerRef.current.dataset.retryCount || parseInt(containerRef.current.dataset.retryCount) < 2) {
-              containerRef.current.dataset.retryCount = (parseInt(containerRef.current.dataset.retryCount) || 0) + 1;
+      // 分层修复策略
+      if (error.message && code) {
+        console.log('🔧 开始分层修复策略...');
+        
+        // 第一步：本地快速修复
+        if (error.message.includes('Parse error')) {
+          try {
+            const fixedCode = attemptCodeFix(code, error.message);
+            if (fixedCode && fixedCode !== code) {
+              console.log('✅ 本地修复成功，重新渲染...');
               const { svg } = await mermaid.render(mermaidId + '_fixed', fixedCode);
               containerRef.current.innerHTML = svg;
               setRendered(true);
               onRenderSuccess?.(svg);
-              return; // 成功修复，直接返回
+              return; // 本地修复成功
+            }
+          } catch (fixError) {
+            console.log('❌ 本地修复失败:', fixError.message);
+          }
+        }
+        
+        // 第二步：调用专门修复服务
+        console.log('🔧 调用专门修复服务...');
+        try {
+          const repairResponse = await fetch('/api/mermaid-repair', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              mermaidCode: code,
+              errorMessage: error.message,
+              originalRequirement: 'flowchart repair'
+            })
+          });
+          
+          if (repairResponse.ok) {
+            const repairResult = await repairResponse.json();
+            
+            if (repairResult.success && repairResult.repairedCode) {
+              console.log(`✅ 修复服务成功 (${repairResult.repairMethod})`);
+              
+              try {
+                const { svg } = await mermaid.render(mermaidId + '_repaired', repairResult.repairedCode);
+                containerRef.current.innerHTML = svg;
+                setRendered(true);
+                onRenderSuccess?.(svg);
+                return; // 修复服务成功
+              } catch (repairRenderError) {
+                console.log('❌ 修复后代码仍无法渲染:', repairRenderError.message);
+              }
             }
           }
-        } catch (fixError) {
-          console.error('智能修复失败:', fixError);
+        } catch (repairServiceError) {
+          console.log('❌ 修复服务调用失败:', repairServiceError.message);
         }
+        
+        console.log('⚠️ 所有修复尝试都失败，显示错误信息');
       }
       
       onRenderError?.(error);

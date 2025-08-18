@@ -54,7 +54,7 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
       try {
         // 直接启动AI分析
         await startAnalysis({
-          requirements: samplePrompt.content,  // 🔧 修复字段名：API期望的是 requirements
+          requirement: samplePrompt.content,  // 🔧 统一字段名：API期望的是 requirement
           productType: samplePrompt.productType,
           implementType: samplePrompt.implementType,
           inputMethod: 'text'
@@ -71,7 +71,7 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
     try {
       // 启动AI分析，用户停留在当前页面看loading
       await startAnalysis({
-        requirements: data.content,  // 🔧 修复字段名：API期望的是 requirements
+        requirement: data.content,  // 🔧 统一字段名：API期望的是 requirement
         productType: data.productType,
         implementType: data.implementType,
         inputMethod: data.inputMethod
@@ -137,7 +137,7 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
   // 重试处理
   const handleRetry = () => {
     retryAnalysis({
-      requirements: inputData.content,  // 🔧 修复字段名：API期望的是 requirements
+      requirement: inputData.content,  // 🔧 统一字段名：API期望的是 requirement
       productType: inputData.productType,
       implementType: inputData.implementType,
       inputMethod: inputData.inputMethod

@@ -219,10 +219,14 @@ class MermaidGenerator {
         return result;
       }
 
-      // 检查是否以flowchart开头
-      if (!code.trim().startsWith('flowchart')) {
+      // 检查是否以有效的Mermaid图表类型开头
+      const trimmedCode = code.trim();
+      const validStarters = ['flowchart', 'graph'];
+      const hasValidStart = validStarters.some(starter => trimmedCode.startsWith(starter));
+      
+      if (!hasValidStart) {
         result.isValid = false;
-        result.errors.push('代码必须以flowchart开头');
+        result.errors.push('代码必须以flowchart或graph开头');
       }
 
       // 更严格的节点和连接模式
@@ -230,7 +234,7 @@ class MermaidGenerator {
       const linkPattern = /^\s*[A-Za-z0-9_]+\s*[-\.=]*>\s*[A-Za-z0-9_]+/;
       const stylePattern = /^\s*style\s+[A-Za-z0-9_]+\s+.+/;
       const commentPattern = /^\s*%%/;
-      const flowchartPattern = /^\s*flowchart\s+(TD|TB|BT|RL|LR)/;
+      const flowchartPattern = /^\s*(flowchart|graph)\s+(TD|TB|BT|RL|LR)/;
       
       const lines = code.split('\n');
       let hasNodes = false;

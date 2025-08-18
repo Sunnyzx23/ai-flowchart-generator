@@ -21,6 +21,7 @@ import analysisRoutes from './src/routes/analysis.js';
 import flowchartRoutes from './src/routes/flowchart.js';
 import flowchartRenderRoutes from './src/routes/flowchartRender.js';
 import exportRoutes from './src/routes/export.js';
+import mermaidRepairRoutes from './src/routes/mermaidRepair.js';
 
 // 导入AI控制器用于兼容性路由
 import { aiController } from './src/controllers/aiController.js';
@@ -66,6 +67,7 @@ app.use('/api/v1/analysis', analysisRoutes);
 app.use('/api/flowchart', flowchartRoutes);
 app.use('/api/v1/flowchart', flowchartRenderRoutes);
 app.use('/api/v1/export', exportRoutes);
+app.use('/api/mermaid-repair', mermaidRepairRoutes);
 
 // 兼容性路由 - 直接处理前端的 /api/ai-analysis 调用
 app.post('/api/ai-analysis', aiController.analyzeRequirement);

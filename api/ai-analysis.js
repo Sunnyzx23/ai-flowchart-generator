@@ -105,14 +105,11 @@ function cleanMermaidCode(mermaidCode) {
           .trim();
         return cleanTitle ? `subgraph ${cleanTitle}` : 'subgraph 流程';
       })
-      // 修复以中文或特殊字符开头的节点ID
-      .replace(/^([^A-Za-z0-9_%\s][^A-Za-z0-9_\s]*)\s*(-->|---)/gm, 'N$2')
-      .replace(/([^A-Za-z0-9_\s]+)(\[|\(|\{)/g, 'N$2')
-      // 修复箭头连接中的中文节点ID
-      .replace(/(-->|---)\s+([^\sA-Za-z0-9_\[\(\{]+)\s+([A-Za-z0-9_]+\[)/g, '$1 $3')
-      .replace(/(-->|---)\s+([^\sA-Za-z0-9_\[\(\{]+)\s+/g, '$1 N')
-      // 修复节点ID连在一起的问题，如 AB[...]P
-      .replace(/([A-Za-z0-9_]+\[[^\]]*\])([A-Za-z0-9_]+)(\s*-->)/g, '$1\n$2$3')
+      // 简单修复：只处理最常见的问题
+      // 1. 修复节点ID连在一起：AB[文本]P --> AB[文本] P
+      .replace(/([A-Za-z0-9_]+\[[^\]]*\])([A-Za-z0-9_]+)/g, '$1\n$2')
+      // 2. 移除连接中的中文等非英文字符：A --> 中文 B 变为 A --> B
+      .replace(/(-->|---)\s+[\u4e00-\u9fff]+\s+([A-Za-z0-9_]+)/g, '$1 $2')
       // 移除或转换非法的文本内容
       .replace(/^#[^%]/gm, '%% ')          // 将#注释转为%%注释
       .replace(/^\d+\.\s*/gm, '%% ')       // 将数字列表转为注释
@@ -206,22 +203,22 @@ export default async function handler(req, res) {
       });
     }
 
-    const { requirements, productType = '通用', implementType = '通用' } = requestBody;
+    const { requirement, productType = '通用', implementType = '通用' } = requestBody;
 
     // 【6.8节】完善字段验证
-    if (!requirements || typeof requirements !== 'string' || requirements.trim().length === 0) {
+    if (!requirement || typeof requirement !== 'string' || requirement.trim().length === 0) {
       return res.status(400).json({
         success: false,
         error: '需求描述不能为空',
-        received: typeof requirements
+        received: typeof requirement
       });
     }
 
-    if (requirements.trim().length < 10) {
+    if (requirement.trim().length < 10) {
       return res.status(400).json({
         success: false,
         error: '需求描述至少需要10个字符',
-        current: requirements.trim().length
+        current: requirement.trim().length
       });
     }
 
@@ -258,18 +255,18 @@ export default async function handler(req, res) {
 - 移动App：触屏交互、网络不稳定、电量优化、屏幕适配
 - 插件扩展：宿主应用限制、权限约束、轻量化设计、快速响应`,
       
-      template: "【需求】：{requirement}\n【产品类型】：{productType}\n【实现方式】：{implementType}\n\n基于用户提供的简单需求，你需要主动进行以下智能分析：\n\n1. 场景理解：深入理解业务场景，识别关键角色、核心功能和使用环境\n2. 流程推断：基于行业经验和产品逻辑，推断出完整的业务流程\n3. 关键节点识别：识别权限验证、付费节点、AI调用、异常处理等关键业务节点\n4. 商业逻辑分析：分析商业化机会、用户付费意愿、会员权益等商业逻辑\n5. 用户体验优化：考虑用户操作便利性、反馈及时性、错误恢复等体验要素\n\n生成具有实际业务价值的专业流程图，要求：\n- 体现具体业务场景的真实流程，不是通用模板\n- 包含关键的商业化节点和用户决策点，对AI服务需要根据具体功能特点分析试用策略：分析功能的核心价值单位、用户价值感知点、合理的试用限制方式和最佳的试用判断时机，体现登录态→会员态→试用策略→功能权限的完整判断层次\n- 显示具体的功能模块和数据流转\n- 体现用户的实际操作路径和选择\n- 包含有意义的异常处理和降级方案\n- 节点命名要具体，避免'处理'、'验证'等通用词汇\n- 使用标准Mermaid flowchart TD语法，确保可渲染\n\n生成具体的业务流程，例如：用户登录 → 权限验证 → 功能选择 → 参数配置 → 核心处理 → 结果展示 → 用户确认 → 保存/分享，避免使用'开始→分析→处理→结束'等通用模板。\n\n直接输出Mermaid代码。"
+      template: "【需求】：{requirement}\n【产品类型】：{productType}\n【实现方式】：{implementType}\n\n基于用户提供的简单需求，你需要主动进行以下智能分析：\n\n1. 场景理解：深入理解业务场景，识别关键角色、核心功能和使用环境\n2. 流程推断：基于行业经验和产品逻辑，推断出完整的业务流程\n3. 关键节点识别：识别权限验证、付费节点、AI调用、异常处理等关键业务节点\n4. 商业逻辑分析：分析商业化机会、用户付费意愿、会员权益等商业逻辑\n5. 用户体验优化：考虑用户操作便利性、反馈及时性、错误恢复等体验要素\n\n生成具有实际业务价值的专业流程图，要求：\n- 体现具体业务场景的真实流程，不是通用模板\n- 包含关键的商业化节点和用户决策点，对AI服务需要根据具体功能特点分析试用策略：分析功能的核心价值单位、用户价值感知点、合理的试用限制方式和最佳的试用判断时机，体现登录态→会员态→试用策略→功能权限的完整判断层次\n- 显示具体的功能模块和数据流转\n- 体现用户的实际操作路径和选择\n- 包含有意义的异常处理和降级方案\n- 节点命名要具体，避免'处理'、'验证'等通用词汇\n- 使用标准Mermaid flowchart TD语法，确保可渲染\n\n生成具体的业务流程，例如：用户登录 → 权限验证 → 功能选择 → 参数配置 → 核心处理 → 结果展示 → 用户确认 → 保存/分享，避免使用'开始→分析→处理→结束'等通用模板。\n\n**重要语法要求**：\n- 节点ID必须英文字母开头：A, B1, userCheck（不能用中文）\n- 一行一个连接：A --> B（不要写 A --> 中文 B --> C）\n- 节点文本简洁：[用户登录]（不超过15字符）\n\n直接输出Mermaid代码。"
     };
     
     console.log(`使用内嵌提示词配置: ${promptConfig.version} - ${promptConfig.description}`);
-    console.log('开始AI分析，需求:', requirements.substring(0, 100) + '...');
+    console.log('开始AI分析，需求:', requirement.substring(0, 100) + '...');
 
     // 使用配置文件中的专业提示词
     const systemPrompt = promptConfig.systemRole;
     
     // 根据模板构建用户提示词
     const userPrompt = promptConfig.template
-      .replace('{requirement}', requirements)
+      .replace('{requirement}', requirement)
       .replace('{productType}', productType)
       .replace('{implementType}', implementType);
 
@@ -354,7 +351,7 @@ export default async function handler(req, res) {
       mermaidCode: mermaidCode,
       fullResponse: fullResponse,
       metadata: {
-        requirements: requirements.substring(0, 200) + (requirements.length > 200 ? '...' : ''),
+        requirement: requirement.substring(0, 200) + (requirement.length > 200 ? '...' : ''),
         productType,
         implementType,
         promptVersion: promptConfig.version,

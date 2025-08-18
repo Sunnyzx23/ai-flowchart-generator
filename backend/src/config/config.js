@@ -16,7 +16,7 @@ const config = {
     baseURL: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1',
     defaultModel: process.env.DEFAULT_MODEL || 'deepseek-chat',
     backupModel: process.env.BACKUP_MODEL || 'deepseek-coder',
-    timeout: parseInt(process.env.AI_TIMEOUT) || 30000
+    timeout: parseInt(process.env.AI_TIMEOUT) || 60000 // 增加到60秒，根据BUG-FIXES-SUMMARY.md的经验
   },
   
   // 应用配置

@@ -280,14 +280,17 @@ export const useAIAnalysis = (existingSessionId = null) => {
       }
       
       // 直接设置结果，不需要轮询
+      console.log('AI分析完成:', data);
+      
       setAnalysisState(prev => ({
         ...prev,
         status: 'completed',
         progress: 100,
         message: '分析完成',
         result: {
-          mermaidCode: data.mermaidCode,
-          fullResponse: data.fullResponse
+          mermaidCode: data.data?.mermaidCode?.mermaidCode || data.mermaidCode,
+          fullResponse: data.data?.mermaidCode?.rawResponse || data.fullResponse,
+          validation: data.data?.mermaidCode?.validation
         }
       }));
       
