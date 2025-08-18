@@ -22,6 +22,9 @@ import flowchartRoutes from './src/routes/flowchart.js';
 import flowchartRenderRoutes from './src/routes/flowchartRender.js';
 import exportRoutes from './src/routes/export.js';
 
+// 导入AI控制器用于兼容性路由
+import { aiController } from './src/controllers/aiController.js';
+
 // 导入中间件
 import { errorHandler } from './src/middleware/errorHandler.js';
 import { requestLogger } from './src/middleware/requestLogger.js';
@@ -63,6 +66,9 @@ app.use('/api/v1/analysis', analysisRoutes);
 app.use('/api/flowchart', flowchartRoutes);
 app.use('/api/v1/flowchart', flowchartRenderRoutes);
 app.use('/api/v1/export', exportRoutes);
+
+// 兼容性路由 - 直接处理前端的 /api/ai-analysis 调用
+app.post('/api/ai-analysis', aiController.analyzeRequirement);
 
 // 健康检查端点
 app.get('/health', (req, res) => {

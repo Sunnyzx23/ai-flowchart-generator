@@ -20,11 +20,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: process.env.NODE_ENV === 'production' 
-          ? 'https://your-vercel-app.vercel.app' 
-          : 'http://localhost:3001',
+        target: 'http://localhost:3001',  // 恢复到后端服务端口
         changeOrigin: true,
-        secure: true
+        secure: false
       }
     }
   }

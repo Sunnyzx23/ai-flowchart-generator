@@ -53,6 +53,9 @@ router.post('/quick-analyze', aiController.quickAnalyze);
 // 智能分析（7维度分析引擎）
 router.post('/intelligent-analyze', aiController.intelligentAnalyze);
 
+// AI分析端点 - 兼容前端调用
+router.post('/analysis', aiController.analyzeRequirement);
+
 // 分析文件需求
 router.post('/analyze-file', upload.single('file'), aiController.analyzeFile);
 

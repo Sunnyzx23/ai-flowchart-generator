@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Layout from '../components/layout/Layout';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui';
 import RequirementInputForm from '../components/input/RequirementInputForm';
+import SamplePrompts from '../components/input/SamplePrompts';
 import { useAIAnalysis } from '../hooks/useAIAnalysis';
 import AIAnalysisProgress from '../components/ai/AIAnalysisProgress';
 import AIErrorAlert from '../components/ai/AIErrorAlert';
@@ -34,13 +35,43 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
     setInputData(prev => ({ ...prev, ...newData }));
   };
 
+  // 处理示例提示词选择
+  const handleSampleSelect = async (samplePrompt) => {
+    console.log('选择示例提示词:', samplePrompt.title);
+    
+    // 自动填充表单数据
+    const newData = {
+      content: samplePrompt.content,
+      productType: samplePrompt.productType,
+      implementType: samplePrompt.implementType,
+      inputMethod: 'text'
+    };
+    
+    setInputData(newData);
+    
+    // 等待一小段时间确保状态更新完成
+    setTimeout(async () => {
+      try {
+        // 直接启动AI分析
+        await startAnalysis({
+          requirements: samplePrompt.content,  // 🔧 修复字段名：API期望的是 requirements
+          productType: samplePrompt.productType,
+          implementType: samplePrompt.implementType,
+          inputMethod: 'text'
+        });
+      } catch (error) {
+        console.error('启动分析失败:', error);
+      }
+    }, 100);
+  };
+
   const handleSubmit = async (data) => {
     console.log('提交数据:', data);
     
     try {
       // 启动AI分析，用户停留在当前页面看loading
       await startAnalysis({
-        requirements: data.content,  // 🔧 修复字段名：requirement -> requirements
+        requirements: data.content,  // 🔧 修复字段名：API期望的是 requirements
         productType: data.productType,
         implementType: data.implementType,
         inputMethod: data.inputMethod
@@ -106,7 +137,7 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
   // 重试处理
   const handleRetry = () => {
     retryAnalysis({
-      requirements: inputData.content,  // 🔧 修复字段名：requirement -> requirements
+      requirements: inputData.content,  // 🔧 修复字段名：API期望的是 requirements
       productType: inputData.productType,
       implementType: inputData.implementType,
       inputMethod: inputData.inputMethod
@@ -140,6 +171,7 @@ const InputPage = ({ onNavigate, currentPage, onResult }) => {
               onChange={handleInputChange}
               onSubmit={handleSubmit}
               isSubmitting={isLoading}
+              onSampleSelect={handleSampleSelect}
             />
           </CardContent>
         </Card>

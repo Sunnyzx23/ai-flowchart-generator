@@ -6,8 +6,9 @@ import TextInputArea from './TextInputArea';
 import FileUploadArea from './FileUploadArea';
 import ProductTypeSelector from './ProductTypeSelector';
 import ImplementTypeSelector from './ImplementTypeSelector';
+import SamplePrompts from './SamplePrompts';
 
-const RequirementInputForm = ({ data, onChange, onSubmit, isSubmitting: externalIsSubmitting }) => {
+const RequirementInputForm = ({ data, onChange, onSubmit, isSubmitting: externalIsSubmitting, onSampleSelect }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   
@@ -110,6 +111,13 @@ const RequirementInputForm = ({ data, onChange, onSubmit, isSubmitting: external
           <p className="mt-2 text-sm text-red-600">
             {errors.content}
           </p>
+        )}
+        
+        {/* 示例提示词区域 - 只在非loading状态且为文本输入模式时显示 */}
+        {!submitLoading && data.inputMethod === 'text' && onSampleSelect && (
+          <div className="mt-4">
+            <SamplePrompts onSelect={onSampleSelect} />
+          </div>
         )}
       </div>
 

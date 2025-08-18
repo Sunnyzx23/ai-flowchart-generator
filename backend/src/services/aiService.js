@@ -59,21 +59,26 @@ class AIService {
    */
   loadPromptConfig() {
     try {
-      // 优先尝试加载简化版本
-      const simpleConfigPath = path.join(process.cwd(), 'config', 'prompt-simple.json');
-      if (fs.existsSync(simpleConfigPath)) {
-        const configData = fs.readFileSync(simpleConfigPath, 'utf8');
-        const config = JSON.parse(configData);
-        console.log(`[AI Service] 加载简化Prompt配置成功，版本: ${config.version}`);
-        return config;
+      // 按优先级尝试加载配置文件
+      const configFiles = [
+        'prompt-simplified-v4.json',  // 最新简化版本
+        'prompt-simple-v2.json',      // 简化版本v2
+        'prompt-enhanced-v3.json',    // 增强版本v3
+        'prompt-v1.json',             // 原始版本
+        'prompt.json'                 // 兜底文件名
+      ];
+
+      for (const filename of configFiles) {
+        const configPath = path.join(process.cwd(), 'config', filename);
+        if (fs.existsSync(configPath)) {
+          const configData = fs.readFileSync(configPath, 'utf8');
+          const config = JSON.parse(configData);
+          console.log(`[AI Service] 加载Prompt配置成功: ${filename}，版本: ${config.version || 'unknown'}`);
+          return config;
+        }
       }
       
-      // 回退到完整版本
-      const configPath = path.join(process.cwd(), 'config', 'prompt.json');
-      const configData = fs.readFileSync(configPath, 'utf8');
-      const config = JSON.parse(configData);
-      console.log(`[AI Service] 加载Prompt配置成功，版本: ${config.version}`);
-      return config;
+      throw new Error('未找到任何可用的Prompt配置文件');
     } catch (error) {
       console.error('[AI Service] 加载Prompt配置失败:', error);
       // 返回默认配置
@@ -87,7 +92,9 @@ class AIService {
    */
   getDefaultPromptConfig() {
     return {
+      version: "default-v1.0",
       systemRole: "你是资深的产品架构师，专门负责将用户需求转化为清晰的业务流程图。",
+      template: "【需求】：{requirement}\n【产品类型】：{productType}\n【实现方式】：{implementType}\n\n请基于用户需求生成专业的业务流程图，使用标准Mermaid flowchart TD语法，确保语法正确且可渲染。",
       analysisFramework: {
         instruction: "请全面分析用户需求：",
         dimensions: [
@@ -98,8 +105,14 @@ class AIService {
       },
       outputFormat: {
         instruction: "生成标准的Mermaid流程图",
-        requirements: ["使用flowchart TD语法", "确保语法正确"]
-      }
+        requirements: ["使用flowchart TD语法", "确保语法正确", "节点标签简洁明确"]
+      },
+      qualityStandards: [
+        "流程图逻辑清晰完整",
+        "Mermaid语法标准规范", 
+        "节点连接关系准确",
+        "业务流程符合实际场景"
+      ]
     };
   }
 
