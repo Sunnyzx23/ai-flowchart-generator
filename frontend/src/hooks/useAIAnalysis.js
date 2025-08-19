@@ -37,38 +37,38 @@ export const useAIAnalysis = (existingSessionId = null) => {
     return statusRanges[status] || [0, 0];
   }, []);
 
-  // 平滑进度计算
+  // 平滑进度计算（重写版：真正的5%增量）
   const calculateSmoothProgress = useCallback((status, elapsedTime) => {
     const [minProgress, maxProgress] = getProgressRange(status);
     
     if (status === 'completed') return 100;
     if (status === 'failed' || status === 'error') return 0;
     
-    // 基于时间的平滑进度增长（超平滑版：均匀时间分配）
+    // 基于时间的平滑进度增长
     const statusDurations = {
-      'idle': 2000,        // 2秒完成0-5%
-      'pending': 3000,     // 3秒完成5-15%，每5%用1.5秒
-      'processing': 8000,  // 8秒完成15-35%，每5%用2秒
-      'analyzing': 8000,   // 8秒完成35-55%，每5%用2秒
-      'generating': 8000,  // 8秒完成55-75%，每5%用2秒
-      'validating': 6000   // 6秒完成75-90%，每5%用2秒
+      'idle': 2000,        
+      'pending': 3000,     
+      'processing': 8000,  
+      'analyzing': 8000,   
+      'generating': 8000,  
+      'validating': 6000   
     };
     
     const expectedDuration = statusDurations[status] || 10000;
     
-    // 使用缓动函数让进度更平滑，避免线性增长带来的突兀感
-    const rawProgress = Math.min(elapsedTime / expectedDuration, 0.95); // 最多到95%，减少余量
+    // 计算当前状态应该有多少个5%增量
+    const totalRange = maxProgress - minProgress;
+    const steps = Math.floor(totalRange / 5); // 总共有几个5%步骤
     
-    // 使用线性进度，确保稳定的5%增量
-    const calculatedProgress = minProgress + (maxProgress - minProgress) * rawProgress;
+    // 根据时间计算当前应该在第几步
+    const timeProgress = Math.min(elapsedTime / expectedDuration, 1);
+    const currentStep = Math.floor(timeProgress * steps);
     
-    // 确保进度以5%为单位增长
-    const progressIn5Percent = Math.floor(calculatedProgress / 5) * 5;
+    // 计算实际进度：起始值 + 当前步数 * 5
+    const actualProgress = minProgress + (currentStep * 5);
     
-    // 添加微小的随机波动，但保持5%边界
-    const randomVariation = (Math.random() - 0.5) * 0.3; // ±0.15%的随机变化
-    
-    return Math.min(maxProgress, Math.max(minProgress, progressIn5Percent + randomVariation));
+    // 确保不超过最大值
+    return Math.min(actualProgress, maxProgress - 5); // 留5%余量给状态切换
   }, [getProgressRange]);
 
   const getStatusMessage = useCallback((status) => {
@@ -101,6 +101,9 @@ export const useAIAnalysis = (existingSessionId = null) => {
         const now = Date.now();
         const elapsedTime = now - (prev.statusStartTime || prev.startTime || now);
         const newProgress = calculateSmoothProgress(prev.status, elapsedTime);
+        
+        // 调试日志
+        console.log(`Progress Debug - Status: ${prev.status}, Elapsed: ${elapsedTime}ms, Old: ${prev.progress}%, New: ${newProgress}%`);
         
         // 只有进度真的变化了才更新
         if (newProgress !== prev.progress) {
