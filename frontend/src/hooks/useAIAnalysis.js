@@ -21,15 +21,15 @@ export const useAIAnalysis = (existingSessionId = null) => {
   const progressTimerRef = useRef(null);
   const statusCheckTimerRef = useRef(null);
 
-  // 辅助函数 - 获取状态对应的进度范围（优化版：更平滑的进度分布）
+  // 辅助函数 - 获取状态对应的进度范围（超平滑版：5%增量设计）
   const getProgressRange = useCallback((status) => {
     const statusRanges = {
       'idle': [0, 5],
-      'pending': [5, 20],        // 扩大pending范围，让初始阶段更平滑
-      'processing': [20, 50],    // 减少processing跳跃，让用户感觉更稳定
-      'analyzing': [50, 65],     // 保持analyzing范围适中
-      'generating': [65, 80],    // 减少generating范围，避免快速跳到70%+
-      'validating': [80, 90],    // 减少validating范围
+      'pending': [5, 15],        // 缩小范围，避免大跳跃
+      'processing': [15, 35],    // 20%范围，分4个5%增量
+      'analyzing': [35, 55],     // 20%范围，分4个5%增量
+      'generating': [55, 75],    // 20%范围，分4个5%增量
+      'validating': [75, 90],    // 15%范围，分3个5%增量
       'completed': [100, 100],
       'failed': [0, 0],
       'error': [0, 0]
@@ -44,30 +44,31 @@ export const useAIAnalysis = (existingSessionId = null) => {
     if (status === 'completed') return 100;
     if (status === 'failed' || status === 'error') return 0;
     
-    // 基于时间的平滑进度增长（优化版：更合理的时间分配）
+    // 基于时间的平滑进度增长（超平滑版：均匀时间分配）
     const statusDurations = {
-      'idle': 1000,        // 减少idle时间
-      'pending': 4000,     // 增加pending时间，让用户感觉系统在认真处理
-      'processing': 20000, // 减少processing时间，避免长时间等待
-      'analyzing': 12000,  // 增加analyzing时间，让用户感觉AI在深度思考
-      'generating': 8000,  // 减少generating时间，避免在70%停太久
-      'validating': 6000   // 增加validating时间，让最后阶段更平滑
+      'idle': 2000,        // 2秒完成0-5%
+      'pending': 3000,     // 3秒完成5-15%，每5%用1.5秒
+      'processing': 8000,  // 8秒完成15-35%，每5%用2秒
+      'analyzing': 8000,   // 8秒完成35-55%，每5%用2秒
+      'generating': 8000,  // 8秒完成55-75%，每5%用2秒
+      'validating': 6000   // 6秒完成75-90%，每5%用2秒
     };
     
     const expectedDuration = statusDurations[status] || 10000;
     
     // 使用缓动函数让进度更平滑，避免线性增长带来的突兀感
-    const rawProgress = Math.min(elapsedTime / expectedDuration, 0.85); // 最多到85%，留更多余量
+    const rawProgress = Math.min(elapsedTime / expectedDuration, 0.95); // 最多到95%，减少余量
     
-    // 使用easeOutQuart缓动函数，让进度在开始时快一些，后面慢一些
-    const easedProgress = 1 - Math.pow(1 - rawProgress, 4);
+    // 使用线性进度，确保稳定的5%增量
+    const calculatedProgress = minProgress + (maxProgress - minProgress) * rawProgress;
     
-    const calculatedProgress = minProgress + (maxProgress - minProgress) * easedProgress;
+    // 确保进度以5%为单位增长
+    const progressIn5Percent = Math.floor(calculatedProgress / 5) * 5;
     
-    // 添加微小的随机波动，让进度条看起来更"活"
-    const randomVariation = (Math.random() - 0.5) * 0.5; // ±0.25%的随机变化
+    // 添加微小的随机波动，但保持5%边界
+    const randomVariation = (Math.random() - 0.5) * 0.3; // ±0.15%的随机变化
     
-    return Math.floor(Math.min(maxProgress * 0.9, calculatedProgress + randomVariation));
+    return Math.min(maxProgress, Math.max(minProgress, progressIn5Percent + randomVariation));
   }, [getProgressRange]);
 
   const getStatusMessage = useCallback((status) => {
@@ -111,7 +112,7 @@ export const useAIAnalysis = (existingSessionId = null) => {
         
         return prev;
       });
-    }, 200); // 每200ms更新一次进度，让动画更平滑
+    }, 150); // 每150ms更新一次进度，让动画更平滑
   }, [calculateSmoothProgress]);
 
   // 状态轮询

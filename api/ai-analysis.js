@@ -122,12 +122,10 @@ function cleanMermaidCode(mermaidCode) {
       .replace(/^\*\s*/gm, '%% ')          // 将星号列表转为注释
       .replace(/^-\s*/gm, '%% ')           // 将短横线列表转为注释
       
-      // 【紧急修复】移除混合的图表类型声明
+      // 移除混合的图表类型声明（保守策略）
       .replace(/^stateDiagram.*$/gm, '')   // 移除stateDiagram声明
       .replace(/^graph\s+.*$/gm, '')       // 移除graph声明
       .replace(/^sequenceDiagram.*$/gm, '') // 移除sequenceDiagram声明
-      .replace(/^gantt.*$/gm, '')          // 移除gantt声明
-      .replace(/^pie.*$/gm, '')            // 移除pie声明
       
       // 第六步：清理空行和格式化
       .split('\n')
@@ -249,18 +247,17 @@ export default async function handler(req, res) {
 
     // 内嵌v2.4版本提示词配置（平衡实用版本）
     const promptConfig = {
-      version: "2.4",
+      version: "2.0-stable",
       lastUpdated: "2025-08-19",
-      description: "AI流程图生成工具 - 平衡实用版本",
-      systemRole: `你是资深的产品架构师和业务流程专家。基于用户简单需求，主动进行业务分析，推断完整流程，生成专业流程图。你是业务分析助手，不要求用户提供所有细节。
+      description: "AI流程图生成工具 - 稳定版本（优化业务逻辑）",
+      systemRole: `你是资深的产品架构师和业务流程专家。基于用户简单需求，主动进行业务分析，推断完整流程，生成专业流程图。
 
 核心原则：
 - 主动推断完整业务流程，重点关注用户角色、权限管理、商业化节点、异常处理
 - 输出对产品经理和开发团队有实际指导价值
-- 节点命名具体明确，避免空洞词语
-- 结合产品形态：桌面端（本地处理）、Web（网络延迟）、移动App（弱网优化）、插件（轻量化）`,
+- 节点命名具体明确，避免空洞词语`,
       
-      template: "【需求】：{requirement}\n【产品类型】：{productType}\n【实现方式】：{implementType}\n\n请按以下结构输出：\n\n## 业务流程分析\n- 场景理解（结合{productType}特点）\n- 完整流程说明（用户角色、系统动作、数据流转）\n- 关键节点说明（权限验证、核心功能、商业化节点）\n- 异常处理（网络失败、API超时、权限不足的降级方案）\n\n## 商业化策略\n- 收费点设计：识别核心收费环节和价值点\n- 权限层次：登录态→试用态→付费态的逻辑设计\n- 用户转化：试用策略和付费触发时机\n\n## 用户体验优化\n- 操作流畅性、错误恢复、性能优化建议\n\n## 流程图代码\n严格按Mermaid flowchart TD规范：\n- 必须以flowchart TD开头，不要添加其他图表类型声明\n- 禁止混合其他语法：不要使用stateDiagram、graph、sequenceDiagram等\n- 节点ID英文开头：A, B1, loginCheck\n- 节点文本≤15字符：A[用户登录]\n- 矩形[]操作，菱形{}判断，判断必须≥2分支\n- 标注分支：-->|是| -->|否|\n\n```mermaid\nflowchart TD\nA[用户登录] --> B{权限检查}\nB -->|通过| C[执行功能]\nB -->|失败| D[跳转登录]\nC --> E{网络状态}\nE -->|正常| F[返回结果]\nE -->|异常| G[离线模式]\n```"
+      template: "【需求】：{requirement}\n【产品类型】：{productType}\n【实现方式】：{implementType}\n\n请按以下结构输出：\n\n## 业务流程分析\n基于需求进行完整的业务流程分析，包括：\n- 场景理解和用户角色定义\n- 完整流程说明（用户操作→系统响应→数据流转）\n- 关键节点说明（权限验证、核心功能、商业化节点）\n- 异常处理方案（网络失败、API超时、权限不足等）\n\n## 商业化策略\n- 收费点设计：明确核心收费环节和价值点\n- 权限层次：登录态→试用态→付费态的逻辑设计\n- 用户转化：试用策略和付费触发时机\n- 定价策略：基于用户价值的定价建议\n\n## 用户体验优化\n- 操作流畅性优化建议\n- 错误处理和用户引导\n- 性能优化要点\n\n## 流程图代码\n```mermaid\nflowchart TD\n[在这里生成完整的Mermaid流程图代码，严格遵循以下规范：]\n[1. 节点ID必须以英文字母开头，如：A, B1, loginCheck]\n[2. 节点文本控制在15字符以内，如：A[用户登录]]\n[3. 使用矩形[]表示操作，菱形{}表示判断]\n[4. 每个判断节点必须有至少2个分支]\n[5. 连接线标注使用 -->|标签| 格式]\n[6. 示例格式：A[开始] --> B{条件判断} B -->|是| C[执行操作] B -->|否| D[其他操作]]\n```"
     };
     
     console.log(`使用内嵌提示词配置: ${promptConfig.version} - ${promptConfig.description}`);
