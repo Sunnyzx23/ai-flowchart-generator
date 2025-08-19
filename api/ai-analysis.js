@@ -122,6 +122,13 @@ function cleanMermaidCode(mermaidCode) {
       .replace(/^\*\s*/gm, '%% ')          // 将星号列表转为注释
       .replace(/^-\s*/gm, '%% ')           // 将短横线列表转为注释
       
+      // 【紧急修复】移除混合的图表类型声明
+      .replace(/^stateDiagram.*$/gm, '')   // 移除stateDiagram声明
+      .replace(/^graph\s+.*$/gm, '')       // 移除graph声明
+      .replace(/^sequenceDiagram.*$/gm, '') // 移除sequenceDiagram声明
+      .replace(/^gantt.*$/gm, '')          // 移除gantt声明
+      .replace(/^pie.*$/gm, '')            // 移除pie声明
+      
       // 第六步：清理空行和格式化
       .split('\n')
       .map(line => line.trim())
@@ -253,7 +260,7 @@ export default async function handler(req, res) {
 - 节点命名具体明确，避免空洞词语
 - 结合产品形态：桌面端（本地处理）、Web（网络延迟）、移动App（弱网优化）、插件（轻量化）`,
       
-      template: "【需求】：{requirement}\n【产品类型】：{productType}\n【实现方式】：{implementType}\n\n请按以下结构输出：\n\n## 业务流程分析\n- 场景理解（结合{productType}特点）\n- 完整流程说明（用户角色、系统动作、数据流转）\n- 关键节点说明（权限验证、核心功能、商业化节点）\n- 异常处理（网络失败、API超时、权限不足的降级方案）\n\n## 商业化策略\n- 收费点设计：识别核心收费环节和价值点\n- 权限层次：登录态→试用态→付费态的逻辑设计\n- 用户转化：试用策略和付费触发时机\n\n## 用户体验优化\n- 操作流畅性、错误恢复、性能优化建议\n\n## 流程图代码\n严格按Mermaid flowchart TD规范：\n- 节点ID英文开头：A, B1, loginCheck\n- 节点文本≤15字符：A[用户登录]\n- 矩形[]操作，菱形{}判断，判断必须≥2分支\n- 标注分支：-->|是| -->|否|\n\n```mermaid\nflowchart TD\nA[用户登录] --> B{权限检查}\nB -->|通过| C[执行功能]\nB -->|失败| D[跳转登录]\nC --> E{网络状态}\nE -->|正常| F[返回结果]\nE -->|异常| G[离线模式]\n```"
+      template: "【需求】：{requirement}\n【产品类型】：{productType}\n【实现方式】：{implementType}\n\n请按以下结构输出：\n\n## 业务流程分析\n- 场景理解（结合{productType}特点）\n- 完整流程说明（用户角色、系统动作、数据流转）\n- 关键节点说明（权限验证、核心功能、商业化节点）\n- 异常处理（网络失败、API超时、权限不足的降级方案）\n\n## 商业化策略\n- 收费点设计：识别核心收费环节和价值点\n- 权限层次：登录态→试用态→付费态的逻辑设计\n- 用户转化：试用策略和付费触发时机\n\n## 用户体验优化\n- 操作流畅性、错误恢复、性能优化建议\n\n## 流程图代码\n严格按Mermaid flowchart TD规范：\n- 必须以flowchart TD开头，不要添加其他图表类型声明\n- 禁止混合其他语法：不要使用stateDiagram、graph、sequenceDiagram等\n- 节点ID英文开头：A, B1, loginCheck\n- 节点文本≤15字符：A[用户登录]\n- 矩形[]操作，菱形{}判断，判断必须≥2分支\n- 标注分支：-->|是| -->|否|\n\n```mermaid\nflowchart TD\nA[用户登录] --> B{权限检查}\nB -->|通过| C[执行功能]\nB -->|失败| D[跳转登录]\nC --> E{网络状态}\nE -->|正常| F[返回结果]\nE -->|异常| G[离线模式]\n```"
     };
     
     console.log(`使用内嵌提示词配置: ${promptConfig.version} - ${promptConfig.description}`);
