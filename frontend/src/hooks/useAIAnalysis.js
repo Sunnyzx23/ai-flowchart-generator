@@ -21,15 +21,15 @@ export const useAIAnalysis = (existingSessionId = null) => {
   const progressTimerRef = useRef(null);
   const statusCheckTimerRef = useRef(null);
 
-  // 辅助函数 - 获取状态对应的进度范围
+  // 辅助函数 - 获取状态对应的进度范围（优化版：更平滑的进度分布）
   const getProgressRange = useCallback((status) => {
     const statusRanges = {
       'idle': [0, 5],
-      'pending': [5, 15],
-      'processing': [15, 45], // 扩大processing的进度范围
-      'analyzing': [45, 65],
-      'generating': [65, 85],
-      'validating': [85, 95],
+      'pending': [5, 20],        // 扩大pending范围，让初始阶段更平滑
+      'processing': [20, 50],    // 减少processing跳跃，让用户感觉更稳定
+      'analyzing': [50, 65],     // 保持analyzing范围适中
+      'generating': [65, 80],    // 减少generating范围，避免快速跳到70%+
+      'validating': [80, 90],    // 减少validating范围
       'completed': [100, 100],
       'failed': [0, 0],
       'error': [0, 0]
@@ -44,20 +44,30 @@ export const useAIAnalysis = (existingSessionId = null) => {
     if (status === 'completed') return 100;
     if (status === 'failed' || status === 'error') return 0;
     
-    // 基于时间的平滑进度增长
+    // 基于时间的平滑进度增长（优化版：更合理的时间分配）
     const statusDurations = {
-      'idle': 2000,
-      'pending': 3000,
-      'processing': 25000, // processing阶段预计25秒
-      'analyzing': 8000,
-      'generating': 10000,
-      'validating': 5000
+      'idle': 1000,        // 减少idle时间
+      'pending': 4000,     // 增加pending时间，让用户感觉系统在认真处理
+      'processing': 20000, // 减少processing时间，避免长时间等待
+      'analyzing': 12000,  // 增加analyzing时间，让用户感觉AI在深度思考
+      'generating': 8000,  // 减少generating时间，避免在70%停太久
+      'validating': 6000   // 增加validating时间，让最后阶段更平滑
     };
     
     const expectedDuration = statusDurations[status] || 10000;
-    const progressInStatus = Math.min(elapsedTime / expectedDuration, 0.9); // 最多到90%，留点余量
     
-    return Math.floor(minProgress + (maxProgress - minProgress) * progressInStatus);
+    // 使用缓动函数让进度更平滑，避免线性增长带来的突兀感
+    const rawProgress = Math.min(elapsedTime / expectedDuration, 0.85); // 最多到85%，留更多余量
+    
+    // 使用easeOutQuart缓动函数，让进度在开始时快一些，后面慢一些
+    const easedProgress = 1 - Math.pow(1 - rawProgress, 4);
+    
+    const calculatedProgress = minProgress + (maxProgress - minProgress) * easedProgress;
+    
+    // 添加微小的随机波动，让进度条看起来更"活"
+    const randomVariation = (Math.random() - 0.5) * 0.5; // ±0.25%的随机变化
+    
+    return Math.floor(Math.min(maxProgress * 0.9, calculatedProgress + randomVariation));
   }, [getProgressRange]);
 
   const getStatusMessage = useCallback((status) => {
@@ -101,7 +111,7 @@ export const useAIAnalysis = (existingSessionId = null) => {
         
         return prev;
       });
-    }, 500); // 每500ms更新一次进度
+    }, 200); // 每200ms更新一次进度，让动画更平滑
   }, [calculateSmoothProgress]);
 
   // 状态轮询
