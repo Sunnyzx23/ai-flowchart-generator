@@ -102,8 +102,7 @@ export const useAIAnalysis = (existingSessionId = null) => {
         const elapsedTime = now - (prev.statusStartTime || prev.startTime || now);
         const newProgress = calculateSmoothProgress(prev.status, elapsedTime);
         
-        // 调试日志
-        console.log(`Progress Debug - Status: ${prev.status}, Elapsed: ${elapsedTime}ms, Old: ${prev.progress}%, New: ${newProgress}%`);
+
         
         // 只有进度真的变化了才更新
         if (newProgress !== prev.progress) {
@@ -232,35 +231,38 @@ export const useAIAnalysis = (existingSessionId = null) => {
         message: '正在连接AI服务...'
       }));
 
-      // 模拟进度更新，提升用户体验
-      const progressUpdates = [
-        { progress: 25, message: '正在分析需求内容...', delay: 800 },
-        { progress: 45, message: '正在生成流程结构...', delay: 1500 },
-        { progress: 70, message: '正在优化流程图代码...', delay: 2200 }
-      ];
+      // 平滑进度更新，真正的5%增量
+      let currentProgress = 10;
+      const progressTimer = setInterval(() => {
+        setAnalysisState(prev => {
+          // 只有在处理中时才更新进度
+          if (['processing', 'analyzing'].includes(prev.status)) {
+            const newProgress = Math.min(currentProgress, 85); // 最多到85%，留余量给完成状态
+            currentProgress += 5; // 每次增加5%
+            
+            // 根据进度更新消息
+            let message = '正在连接AI服务...';
+            if (newProgress >= 20) message = '正在分析需求内容...';
+            if (newProgress >= 40) message = '正在生成流程结构...';
+            if (newProgress >= 60) message = '正在优化流程图代码...';
+            if (newProgress >= 80) message = '正在生成最终结果...';
+            
+            return {
+              ...prev,
+              progress: newProgress,
+              message: message
+            };
+          }
+          return prev;
+        });
+      }, 500); // 每500ms增加5%
 
-      // 启动进度更新
-      const updateProgress = (index = 0) => {
-        if (index < progressUpdates.length) {
-          setTimeout(() => {
-            setAnalysisState(prev => {
-              // 只有在still processing时才更新进度
-              if (['processing', 'analyzing'].includes(prev.status)) {
-                return {
-                  ...prev,
-                  progress: progressUpdates[index].progress,
-                  message: progressUpdates[index].message
-                };
-              }
-              return prev;
-            });
-            updateProgress(index + 1);
-          }, progressUpdates[index].delay);
+      // 保存定时器引用，用于清理
+      const cleanupProgress = () => {
+        if (progressTimer) {
+          clearInterval(progressTimer);
         }
       };
-
-      // 开始进度更新
-      updateProgress();
 
       // 调用后端API创建分析会话
       const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AI_ANALYSIS), {
@@ -281,15 +283,10 @@ export const useAIAnalysis = (existingSessionId = null) => {
         throw new Error(`分析请求失败: ${response.status} ${response.statusText}`);
       }
 
-      // 更新为最终分析阶段
-      setAnalysisState(prev => ({
-        ...prev,
-        status: 'analyzing',
-        progress: 85,
-        message: '正在生成最终结果...'
-      }));
-
       const data = await response.json();
+      
+      // 清理进度定时器
+      cleanupProgress();
       
       if (!data.success) {
         throw new Error(data.error || '分析失败');
@@ -311,6 +308,11 @@ export const useAIAnalysis = (existingSessionId = null) => {
       }));
       
     } catch (error) {
+      // 清理进度定时器
+      if (typeof cleanupProgress === 'function') {
+        cleanupProgress();
+      }
+      
       setAnalysisState(prev => ({
         ...prev,
         status: 'error',
