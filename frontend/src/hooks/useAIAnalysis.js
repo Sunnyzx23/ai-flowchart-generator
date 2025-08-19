@@ -137,7 +137,9 @@ export const useAIAnalysis = (existingSessionId = null) => {
               status: sessionData.status,
               message: getStatusMessage(sessionData.status),
               // 如果状态改变了，重置该状态的开始时间
-              statusStartTime: statusChanged ? now : (prev.statusStartTime || now)
+              statusStartTime: statusChanged ? now : (prev.statusStartTime || now),
+              // 【关键修复】状态切换时重置进度，否则保持当前进度
+              progress: statusChanged ? getProgressRange(sessionData.status)[0] : prev.progress
             };
           });
 
