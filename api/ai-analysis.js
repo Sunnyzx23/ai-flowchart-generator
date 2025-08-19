@@ -108,8 +108,14 @@ function cleanMermaidCode(mermaidCode) {
       // 简单修复：只处理最常见的问题
       // 1. 修复节点ID连在一起：AB[文本]P --> AB[文本] P
       .replace(/([A-Za-z0-9_]+\[[^\]]*\])([A-Za-z0-9_]+)/g, '$1\n$2')
-      // 2. 移除连接中的中文等非英文字符：A --> 中文 B 变为 A --> B
-      .replace(/(-->|---)\s+[\u4e00-\u9fff]+\s+([A-Za-z0-9_]+)/g, '$1 $2')
+      // 2. 修复连接线标签语法错误：A --> 标签 B --> A -->|标签| B
+      .replace(/(-->|---)\s+([^\s\-\>\|A-Za-z0-9_\[\{\(]+)\s+([A-Za-z0-9_]+)/g, '$1|$2| $3')
+      // 3. 修复连接线标签语法错误：A --> 标签 B[文本] --> A -->|标签| B[文本]  
+      .replace(/(-->|---)\s+([^\s\-\>\|A-Za-z0-9_\[\{\(]+)\s+([A-Za-z0-9_]+\[[^\]]*\])/g, '$1|$2| $3')
+      // 4. 修复连接线标签语法错误：A --> 标签 B{文本} --> A -->|标签| B{文本}
+      .replace(/(-->|---)\s+([^\s\-\>\|A-Za-z0-9_\[\{\(]+)\s+([A-Za-z0-9_]+\{[^}]*\})/g, '$1|$2| $3')
+      // 5. 移除连接中剩余的非法字符：A --> 中文 B 变为 A --> B（作为备用）
+      .replace(/(-->|---)\s+[\u4e00-\u9fff\s]+([A-Za-z0-9_]+)/g, '$1 $2')
       // 移除或转换非法的文本内容
       .replace(/^#[^%]/gm, '%% ')          // 将#注释转为%%注释
       .replace(/^\d+\.\s*/gm, '%% ')       // 将数字列表转为注释
@@ -255,7 +261,28 @@ export default async function handler(req, res) {
 - 移动App：触屏交互、网络不稳定、电量优化、屏幕适配
 - 插件扩展：宿主应用限制、权限约束、轻量化设计、快速响应`,
       
-      template: "【需求】：{requirement}\n【产品类型】：{productType}\n【实现方式】：{implementType}\n\n基于用户提供的简单需求，你需要主动进行以下智能分析：\n\n1. 场景理解：深入理解业务场景，识别关键角色、核心功能和使用环境\n2. 流程推断：基于行业经验和产品逻辑，推断出完整的业务流程\n3. 关键节点识别：识别权限验证、付费节点、AI调用、异常处理等关键业务节点\n4. 商业逻辑分析：分析商业化机会、用户付费意愿、会员权益等商业逻辑\n5. 用户体验优化：考虑用户操作便利性、反馈及时性、错误恢复等体验要素\n\n生成具有实际业务价值的专业流程图，要求：\n- 体现具体业务场景的真实流程，不是通用模板\n- 包含关键的商业化节点和用户决策点，对AI服务需要根据具体功能特点分析试用策略：分析功能的核心价值单位、用户价值感知点、合理的试用限制方式和最佳的试用判断时机，体现登录态→会员态→试用策略→功能权限的完整判断层次\n- 显示具体的功能模块和数据流转\n- 体现用户的实际操作路径和选择\n- 包含有意义的异常处理和降级方案\n- 节点命名要具体，避免'处理'、'验证'等通用词汇\n- 使用标准Mermaid flowchart TD语法，确保可渲染\n\n生成具体的业务流程，例如：用户登录 → 权限验证 → 功能选择 → 参数配置 → 核心处理 → 结果展示 → 用户确认 → 保存/分享，避免使用'开始→分析→处理→结束'等通用模板。\n\n**重要语法要求**：\n- 节点ID必须英文字母开头：A, B1, userCheck（不能用中文）\n- 一行一个连接：A --> B（不要写 A --> 中文 B --> C）\n- 节点文本简洁：[用户登录]（不超过15字符）\n\n直接输出Mermaid代码。"
+      template: "【需求】：{requirement}\n【产品类型】：{productType}\n【实现方式】：{implementType}\n\n基于用户提供的简单需求，你需要主动进行以下智能分析：\n\n1. 场景理解：深入理解业务场景，识别关键角色、核心功能和使用环境\n2. 流程推断：基于行业经验和产品逻辑，推断出完整的业务流程\n3. 关键节点识别：识别权限验证、付费节点、AI调用、异常处理等关键业务节点\n4. 商业逻辑分析：分析商业化机会、用户付费意愿、会员权益等商业逻辑\n5. 用户体验优化：考虑用户操作便利性、反馈及时性、错误恢复等体验要素\n\n生成具有实际业务价值的专业流程图，要求：\n- 体现具体业务场景的真实流程，不是通用模板\n- 包含关键的商业化节点和用户决策点，对AI服务需要根据具体功能特点分析试用策略：分析功能的核心价值单位、用户价值感知点、合理的试用限制方式和最佳的试用判断时机，体现登录态→会员态→试用策略→功能权限的完整判断层次\n- 显示具体的功能模块和数据流转\n- 体现用户的实际操作路径和选择\n- 包含有意义的异常处理和降级方案\n- 节点命名要具体，避免'处理'、'验证'等通用词汇\n- 使用标准Mermaid flowchart TD语法，确保可渲染\n\n生成具体的业务流程，例如：用户登录 → 权限验证 → 功能选择 → 参数配置 → 核心处理 → 结果展示 → 用户确认 → 保存/分享，避免使用'开始→分析→处理→结束'等通用模板。\n\n**重要语法要求**：\n- 节点ID必须英文字母开头：A, B1, userCheck（不能用中文）\n- 一行一个连接：A --> B（不要写 A --> 中文 B --> C）\n- 节点文本简洁：[用户登录]（不超过15字符）\n\n**输出格式要求**：
+请严格按照以下格式输出，分为两个部分：
+
+## 业务流程分析
+
+[在这里提供详细的业务逻辑分析、关键节点说明、商业化建议等]
+
+## 流程图代码
+
+```mermaid
+flowchart TD
+[在这里输出标准的Mermaid代码]
+```
+
+**Mermaid语法要求**：
+- 节点ID必须英文字母开头：A, B1, userCheck（不能用中文）
+- 连接线标签使用管道符：A -->|标签| B
+- 一行一个连接：A --> B
+- 节点文本简洁：[用户登录]（不超过15字符）
+- 只在代码块内输出纯净的Mermaid语法
+
+严格按照上述格式输出，业务分析和代码必须分离。"
     };
     
     console.log(`使用内嵌提示词配置: ${promptConfig.version} - ${promptConfig.description}`);
@@ -316,15 +343,25 @@ export default async function handler(req, res) {
       throw new Error('AI服务响应格式异常');
     }
 
-    let mermaidCode = apiData.choices[0].message.content.trim();
-    const fullResponse = mermaidCode;
+    const fullResponse = apiData.choices[0].message.content.trim();
     
-    // 清理和提取Mermaid代码
-    mermaidCode = mermaidCode
-      .replace(/```mermaid\n?/g, '')
-      .replace(/```\n?/g, '')
-      .replace(/^mermaid\n?/g, '')
-      .trim();
+    // 【方案二】优先提取mermaid代码块，分离解释和代码
+    const mermaidMatch = fullResponse.match(/```mermaid\n([\s\S]*?)\n```/);
+    let mermaidCode;
+    
+    if (mermaidMatch && mermaidMatch[1]) {
+      // 找到了mermaid代码块，使用代码块内容
+      mermaidCode = mermaidMatch[1].trim();
+      console.log('✅ 成功提取mermaid代码块');
+    } else {
+      // 没找到代码块，使用传统方式清理
+      console.log('⚠️ 未找到mermaid代码块，使用传统清理方式');
+      mermaidCode = fullResponse
+        .replace(/```mermaid\n?/g, '')
+        .replace(/```\n?/g, '')
+        .replace(/^mermaid\n?/g, '')
+        .trim();
+    }
 
     // 确保代码符合配置要求
     if (!mermaidCode.toLowerCase().includes('flowchart')) {
@@ -350,6 +387,7 @@ export default async function handler(req, res) {
       success: true,
       mermaidCode: mermaidCode,
       fullResponse: fullResponse,
+      hasCodeBlock: !!mermaidMatch, // 标识是否成功提取了代码块
       metadata: {
         requirement: requirement.substring(0, 200) + (requirement.length > 200 ? '...' : ''),
         productType,
